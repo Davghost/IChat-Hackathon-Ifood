@@ -50,6 +50,10 @@ def create_app():
     app.register_blueprint(user_controller)
     app.register_blueprint(auth_controller)
 
+    @app.route("/")
+    def index():
+        return "Welcome to the Flask Backend Template!"
+
     api.register(app)
 
     return app
