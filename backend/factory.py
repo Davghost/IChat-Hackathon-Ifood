@@ -52,7 +52,7 @@ def create_app():
 
     @app.route("/")
     def index():
-        return "Welcome to the Flask Backend Template!"
+        return "Welcome to the Flask Backend Template! Test"
 
     api.register(app)
 
