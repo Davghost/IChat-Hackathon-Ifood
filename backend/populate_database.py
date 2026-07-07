@@ -35,8 +35,9 @@ def populate_admin_user():
 
 def populate_owner():
     user= User(
-        username="marcos",
-        email="marcos4@gmail.com"
+        username="duda",
+        email="duda4@gmail.com",
+        role="owner"
     )
 
     user.password = "123"

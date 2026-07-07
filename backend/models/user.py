@@ -21,6 +21,12 @@ class User(db.Model):
         cascade="all, delete-orphan",
         lazy=True,
     )
+    restaurants = db.relationship(
+        "Restaurant",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+        lazy=True,
+    )
 
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 

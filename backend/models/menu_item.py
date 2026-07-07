@@ -11,6 +11,12 @@ class MenuItem(db.Model):
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=False)
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    restaurant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("restaurants.id"),
+        nullable=True,
+        index=True,
+    )
 
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
@@ -20,6 +26,7 @@ class MenuItem(db.Model):
     )
 
     owner = db.relationship("User", back_populates="menu_items")
+    restaurant = db.relationship("Restaurant", back_populates="menu_items")
 
     def __repr__(self) -> str:
         return f"<MenuItem {self.name}>"
