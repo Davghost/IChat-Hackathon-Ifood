@@ -9,7 +9,7 @@ from flask_jwt_extended import create_access_token
 from models import User
 from utils.response_schema import GenericResponse
 
-auth_controller = Blueprint("auth_controller", __name__, url_prefix="/auth")
+auth_controller = Blueprint("auth_controller", __name__, url_prefix="/api/auth")
 
 
 class LoginMessage(BaseModel):
