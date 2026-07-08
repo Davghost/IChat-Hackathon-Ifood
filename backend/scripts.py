@@ -2,6 +2,7 @@ from main import app
 from factory import db
 from models.menu_item import MenuItem
 from models.restaurant import Restaurant
+from models.order import Order
 
 RESTAURANT_OWNER_ID = 4
 
@@ -57,26 +58,28 @@ menus = [
 ]
 
 with app.app_context():
-    restaurant = Restaurant(
-        name="Restaurante Teste",
-        description="Restaurante de teste para demonstração do sistema.",
-        owner_id=RESTAURANT_OWNER_ID,
-    )
+    orders = [
+        Order(
+            customer_id=1,
+            owner_id=1,
+            restaurant_id=1,
+            menu_item_id=2,
+            quantity=2,
+            unit_price=16.00,
+            total_price=32.00
+        ),
+        Order(
+            customer_id=1,
+            owner_id=1,
+            restaurant_id=1,
+            menu_item_id=3,
+            quantity=1,
+            unit_price=34.90,
+            total_price=34.90
+        ),
+    ]
 
-    db.session.add(restaurant)
-    db.session.flush()
-
-    for menu in menus:
-        item = MenuItem(
-            owner_id=restaurant.owner_id,
-            restaurant_id=restaurant.id,
-            title=menu["title"],
-            name=menu["name"],
-            description=menu["description"],
-            price=menu["price"],
-        )
-        db.session.add(item)
-
+    db.session.add_all(orders)
     db.session.commit()
 
-    print(f"Restaurante {restaurant.id} criado com {len(menus)} menus.")
+    print("Pedidos criados com sucessos!")

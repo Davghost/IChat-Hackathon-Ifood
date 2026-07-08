@@ -1,8 +1,10 @@
 from datetime import datetime
 
-from factory import api
+from factory import api, db
 from flask import Blueprint, request, url_for
 from models.user import UserResponse
+from models.menu_item import MenuItem
+from models.order import Order
 from models.restaurant import Restaurant
 from utils.response_schema import GenericResponse
 from spectree import Response
@@ -51,6 +53,36 @@ class PublicRestaurantResponse(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     menu_items: list[PublicMenuItemResponse]
+
+
+class CreateOrderMessage(BaseModel):
+    menu_item_id: int
+    quantity: int = Field(default=1, ge=1)
+
+
+class OrderRestaurantResponse(BaseModel):
+    id: int
+    name: str
+
+
+class OrderMenuItemResponse(BaseModel):
+    id: int
+    title: str
+    name: str
+    price: float
+
+
+class OrderResponse(BaseModel):
+    id: int
+    customer_id: int
+    quantity: int
+    unit_price: float
+    total_price: float
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    restaurant: OrderRestaurantResponse
+    menu_item: OrderMenuItemResponse
 
 
 class PaginationLinks(BaseModel):
@@ -143,6 +175,29 @@ def _restaurant_response(restaurant):
     )
 
 
+def _order_response(order):
+    return OrderResponse(
+        id=order.id,
+        customer_id=order.customer_id,
+        quantity=order.quantity,
+        unit_price=order.unit_price,
+        total_price=order.total_price,
+        status=order.status,
+        created_at=order.created_at,
+        updated_at=order.updated_at,
+        restaurant=OrderRestaurantResponse(
+            id=order.restaurant.id,
+            name=order.restaurant.name,
+        ),
+        menu_item=OrderMenuItemResponse(
+            id=order.menu_item.id,
+            title=order.menu_item.title,
+            name=order.menu_item.name,
+            price=order.unit_price,
+        ),
+    )
+
+
 @user_controller.get("/me")
 @api.validate(
     resp=Response(HTTP_200=UserResponse, HTTP_404=GenericResponse), tags=["users"]
@@ -156,6 +211,48 @@ def get_user():
     response = UserResponse.model_validate(current_user).to_response_dict()
 
     return response, 200
+
+
+@user_controller.post("/orders")
+@api.validate(
+    json=CreateOrderMessage,
+    resp=Response(
+        HTTP_201=OrderResponse,
+        HTTP_400=SpectreeValidationError,
+        HTTP_404=GenericResponse,
+    ),
+    tags=["users"],
+)
+@jwt_required()
+def create_order():
+    data = request.json
+    menu_item = MenuItem.query.options(
+        selectinload(MenuItem.restaurant)
+    ).filter_by(id=data["menu_item_id"]).first()
+    if not menu_item:
+        return {"msg": "Menu item not found"}, 404
+
+    quantity = int(data["quantity"])
+    total_price = round(menu_item.price * quantity, 2)
+
+    order = Order(
+        customer_id=current_user.id,
+        owner_id=menu_item.owner_id,
+        restaurant_id=menu_item.restaurant_id,
+        menu_item_id=menu_item.id,
+        quantity=quantity,
+        unit_price=menu_item.price,
+        total_price=total_price,
+    )
+    db.session.add(order)
+    db.session.commit()
+
+    order = Order.query.options(
+        selectinload(Order.restaurant),
+        selectinload(Order.menu_item),
+    ).filter_by(id=order.id).first()
+
+    return _order_response(order).model_dump(mode="json"), 201
 
 
 @user_controller.get("/restaurants")

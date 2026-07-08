@@ -17,3 +17,5 @@ function applyToken() {
     delete api.defaults.headers.common.Authorization
   }
 }
+
+applyToken()

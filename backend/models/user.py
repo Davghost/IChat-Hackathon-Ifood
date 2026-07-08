@@ -46,5 +46,7 @@ class User(db.Model):
 
 
 class UserResponse(OrmBase):
+    username: str
     email: str
+    role: str
     created_at: datetime

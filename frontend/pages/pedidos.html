@@ -3,95 +3,89 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pedidos</title>
+    <title>Pedidos Owner</title>
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
     <main class="app-shell">
       <aside class="sidebar">
-        <a class="brand" href="homeowner.html" aria-label="iFood Manager">
+        <a class="brand" href="homeowner.html" aria-label="iFood Owner">
           <span class="brand-mark">iF</span>
           <span>
             <strong>iFood</strong>
-            <small>Manager</small>
+            <small>Owner</small>
           </span>
         </a>
 
         <nav class="nav-list">
           <a class="nav-item" href="homeowner.html">Resumo</a>
           <a class="nav-item active" href="pedidos.html">Pedidos</a>
-          <a class="nav-item" href="cardapio.html">Cardápio</a>
+          <a class="nav-item" href="cardapio.html">Cardapio</a>
           <a class="nav-item" href="lojas.html">Lojas</a>
           <a class="nav-item" href="faturamento.html">Faturamento</a>
         </nav>
 
         <div class="sidebar-footer">
-          <p>Gerencie pedidos</p>
-          <a class="button button-ghost" href="homeclient.html">Cliente</a>
+          <p id="sidebarUserBadge">Sessao nao iniciada</p>
+          <button id="logoutButton" class="button button-ghost small-button" type="button">Sair</button>
         </div>
       </aside>
 
       <section class="workspace">
         <header class="topbar">
           <div>
-            <p class="page-kicker">Pedidos</p>
-            <h1 class="page-title">Central de pedidos</h1>
-            <p class="page-subtitle">Organize os pedidos recebidos e acompanhe o status de cada um.</p>
-          </div>
-          <div class="topbar-actions">
-            <a class="button button-primary" href="homeowner.html">Voltar ao resumo</a>
+            <p class="page-kicker">Operacao de pedidos</p>
+            <h1 class="page-title">Fila do restaurante</h1>
+            <p class="page-subtitle">Lista de pedidos com filtro por loja e status, usando `/api/owner/orders` e update de status.</p>
           </div>
         </header>
 
-        <section class="view-stack">
-          <div class="orders-board">
-            <article class="order-card">
-              <div class="order-card-top">
-                <div>
-                  <p class="eyebrow">#1042</p>
-                  <h3>Maria Souza</h3>
-                </div>
-                <span class="status-pill status-new">Novo</span>
-              </div>
-              <p>2x Burguer Classic, 1x Refrigerante</p>
-              <div class="order-card-bottom">
-                <small>Rua das Flores, 120</small>
-                <strong>R$ 54,00</strong>
-              </div>
-            </article>
+        <section id="pageAccessState" class="guest-state" hidden></section>
 
-            <article class="order-card">
-              <div class="order-card-top">
-                <div>
-                  <p class="eyebrow">#1041</p>
-                  <h3>Pedro Lima</h3>
-                </div>
-                <span class="status-pill status-preparing">Em preparo</span>
-              </div>
-              <p>1x Pizza Pepperoni, 2x Batata Frita</p>
-              <div class="order-card-bottom">
-                <small>Av. Paulista, 200</small>
-                <strong>R$ 72,50</strong>
-              </div>
-            </article>
+        <section id="ordersPageContent" class="view-stack" hidden>
+          <p id="pageAlert" class="alert alert-success">Carregando...</p>
 
-            <article class="order-card">
-              <div class="order-card-top">
-                <div>
-                  <p class="eyebrow">#1040</p>
-                  <h3>Camila Rocha</h3>
-                </div>
-                <span class="status-pill status-done">Entregue</span>
+          <section class="editor-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Filtros</p>
+                <h2>Refinar lista</h2>
               </div>
-              <p>1x Salada Caesar, 1x Suco</p>
-              <div class="order-card-bottom">
-                <small>Rua Paraná, 300</small>
-                <strong>R$ 38,80</strong>
-              </div>
-            </article>
-          </div>
+            </div>
+
+            <div class="form-grid two-cols">
+              <label class="field">
+                <span>Loja</span>
+                <select id="restaurantFilter"></select>
+              </label>
+              <label class="field">
+                <span>Status</span>
+                <select id="statusFilter">
+                  <option value="">Todos</option>
+                  <option value="new">Novo</option>
+                  <option value="preparing">Em preparo</option>
+                  <option value="ready">Pronto</option>
+                  <option value="delivered">Entregue</option>
+                  <option value="cancelled">Cancelado</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button id="applyFiltersButton" class="button button-primary" type="button">Aplicar filtros</button>
+            </div>
+          </section>
+
+          <div id="ordersStatusMetrics" class="metric-grid"></div>
+          <section id="ordersBoard" class="orders-board"></section>
         </section>
       </section>
     </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app-utils.js"></script>
+    <script src="../js/owner-orders.js"></script>
   </body>
 </html>

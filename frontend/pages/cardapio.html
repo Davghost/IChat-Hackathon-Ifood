@@ -3,117 +3,105 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cardápio</title>
+    <title>Cardapio Owner</title>
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
     <main class="app-shell">
       <aside class="sidebar">
-        <a class="brand" href="homeowner.html" aria-label="iFood Manager">
+        <a class="brand" href="homeowner.html" aria-label="iFood Owner">
           <span class="brand-mark">iF</span>
           <span>
             <strong>iFood</strong>
-            <small>Manager</small>
+            <small>Owner</small>
           </span>
         </a>
 
         <nav class="nav-list">
           <a class="nav-item" href="homeowner.html">Resumo</a>
           <a class="nav-item" href="pedidos.html">Pedidos</a>
-          <a class="nav-item active" href="cardapio.html">Cardápio</a>
+          <a class="nav-item active" href="cardapio.html">Cardapio</a>
           <a class="nav-item" href="lojas.html">Lojas</a>
           <a class="nav-item" href="faturamento.html">Faturamento</a>
         </nav>
 
         <div class="sidebar-footer">
-          <p>Gerencie o cardápio</p>
-          <a class="button button-ghost" href="homeclient.html">Cliente</a>
+          <p id="sidebarUserBadge">Sessao nao iniciada</p>
+          <button id="logoutButton" class="button button-ghost small-button" type="button">Sair</button>
         </div>
       </aside>
 
       <section class="workspace">
         <header class="topbar">
           <div>
-            <p class="page-kicker">Cardápio</p>
-            <h1 class="page-title">Itens do restaurante</h1>
-            <p class="page-subtitle">Atualize os pratos, preços e disponibilidade em poucos cliques.</p>
+            <p class="page-kicker">Gestao de menu</p>
+            <h1 class="page-title">Cadastro de itens</h1>
+            <p class="page-subtitle">CRUD conectado aos endpoints `/api/owner/menus` e `/api/owner/restaurants`.</p>
           </div>
           <div class="topbar-actions">
-            <a class="button button-primary" href="homeowner.html">Voltar ao resumo</a>
+            <a class="button button-ghost" href="lojas.html">Gerenciar lojas</a>
           </div>
         </header>
 
-        <section class="view-stack">
-          <form class="editor-panel">
-            <div class="form-grid">
-              <div class="field">
-                <span>Nome do item</span>
-                <input type="text" value="Classic Burger" />
-              </div>
-              <div class="field">
-                <span>Categoria</span>
-                <select>
-                  <option>Lanche</option>
-                  <option>Pizza</option>
-                  <option>Salada</option>
-                  <option>Acompanhamento</option>
-                </select>
-              </div>
-              <div class="field">
-                <span>Preço</span>
-                <input type="text" value="R$ 24,90" />
-              </div>
-              <div class="field">
-                <span>Disponibilidade</span>
-                <select>
-                  <option>Disponível</option>
-                  <option>Indisponível</option>
-                </select>
+        <section id="pageAccessState" class="guest-state" hidden></section>
+
+        <section id="menuPageContent" class="view-stack" hidden>
+          <p id="pageAlert" class="alert alert-success">Carregando...</p>
+
+          <form id="menuForm" class="editor-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Formulario</p>
+                <h2 id="menuFormTitle">Novo item</h2>
               </div>
             </div>
+
+            <div class="form-grid">
+              <label class="field">
+                <span>Titulo</span>
+                <input id="menuTitle" type="text" required />
+              </label>
+              <label class="field">
+                <span>Nome</span>
+                <input id="menuName" type="text" required />
+              </label>
+              <label class="field">
+                <span>Preco</span>
+                <input id="menuPrice" type="number" min="0" step="0.01" required />
+              </label>
+              <label class="field">
+                <span>Loja</span>
+                <select id="menuRestaurant" required></select>
+              </label>
+              <label class="field field-wide">
+                <span>Descricao</span>
+                <textarea id="menuDescription" rows="3" required></textarea>
+              </label>
+            </div>
+
             <div class="form-actions">
-              <button class="button button-ghost" type="button">Cancelar</button>
-              <button class="button button-primary" type="submit">Salvar item</button>
+              <button id="menuCancelButton" class="button button-ghost" type="button">Limpar</button>
+              <button id="menuSaveButton" class="button button-primary" type="submit">Criar item</button>
             </div>
           </form>
 
-          <div class="table-panel">
+          <section class="table-panel">
             <div class="table-row table-head">
               <span>Item</span>
-              <span>Categoria</span>
-              <span>Preço</span>
-              <span>Status</span>
+              <span>Titulo</span>
+              <span>Preco</span>
+              <span>Acoes</span>
             </div>
-            <div class="table-row">
-              <div>
-                <strong>Classic Burger</strong>
-                <small>Pão brioche e queijo cheddar</small>
-              </div>
-              <span>Lanche</span>
-              <span>R$ 24,90</span>
-              <span>Disponível</span>
-            </div>
-            <div class="table-row">
-              <div>
-                <strong>Pizza Pepperoni</strong>
-                <small>Borda crocante e molho italiano</small>
-              </div>
-              <span>Pizza</span>
-              <span>R$ 36,50</span>
-              <span>Disponível</span>
-            </div>
-            <div class="table-row">
-              <div>
-                <strong>Batata Frita</strong>
-                <small>Com sal e cheddar cremoso</small>
-              </div>
-              <span>Acompanhamento</span>
-              <span>R$ 12,00</span>
-              <span>Disponível</span>
-            </div>
-          </div>
+            <div id="menuTableBody"></div>
+          </section>
         </section>
       </section>
     </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app-utils.js"></script>
+    <script src="../js/owner-menu.js"></script>
   </body>
 </html>

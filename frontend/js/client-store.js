@@ -1,108 +1,228 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const guestState = document.getElementById('clientGuestState')
+  const accessState = document.getElementById('clientAccessState')
+  const content = document.getElementById('clientContent')
+  const statusMessage = document.getElementById('clientStatusMessage')
+  const clientIdentity = document.getElementById('clientIdentity')
+  const logoutButton = document.getElementById('logoutButton')
+  const restaurantTabs = document.getElementById('restaurantTabs')
   const menuGrid = document.getElementById('menuGrid')
   const cartItems = document.getElementById('cartItems')
-  const clientContent = document.getElementById('clientContent')
-  const clientGuestState = document.getElementById('clientGuestState')
-  const clientTopbarActions = document.getElementById('clientTopbarActions')
   const cartTotal = document.getElementById('cartTotal')
   const finishButton = document.getElementById('finishOrderButton')
-  const statusMessage = document.getElementById('clientStatusMessage')
 
-  const cart = []
+  let restaurants = []
+  let cart = []
+  let selectedRestaurantId = null
 
-  function setMessage(message, type = 'success') {
-    if (!statusMessage) return
+  logoutButton?.addEventListener('click', () => {
+    App.logout()
+    location.href = 'login.html'
+  })
+
+  hide(guestState)
+  hide(accessState)
+  hide(content)
+
+  if (!Auth.isLoggedIn()) {
+    showLoginState()
+    return
+  }
+
+  try {
+    const user = await App.getCurrentUser()
+    clientIdentity.textContent = user?.email || 'Sessao ativa'
+
+    if (user?.role === 'owner') {
+      showAccessState()
+      return
+    }
+
+    show(content)
+    finishButton?.addEventListener('click', finishOrder)
+    await loadRestaurants()
+  } catch (error) {
+    if (error?.response?.status === 401 || error?.response?.status === 422) {
+      App.logout()
+      showLoginState('Sua sessao expirou. Entre novamente.')
+      return
+    }
+
+    show(content)
+    setMessage(error?.response?.data?.msg || 'Nao foi possivel carregar a vitrine.', 'error')
+  }
+
+  async function loadRestaurants() {
+    setMessage('Carregando restaurantes e cardapio...', 'success')
+    const response = await api.get('/users/restaurants?page=1&per_page=20')
+    restaurants = response.data?.restaurants || []
+    selectedRestaurantId = restaurants[0]?.id || null
+
+    renderRestaurantTabs()
+    renderMenu()
+    renderCart()
+    setMessage('Vitrine conectada aos restaurantes disponiveis.', 'success')
+  }
+
+  function renderRestaurantTabs() {
+    if (!restaurantTabs) {
+      return
+    }
+
+    if (!restaurants.length) {
+      restaurantTabs.innerHTML = '<p class="empty-cart">Nenhuma loja disponivel no momento.</p>'
+      return
+    }
+
+    restaurantTabs.innerHTML = restaurants.map((restaurant) => `
+      <button class="tab-chip ${restaurant.id === selectedRestaurantId ? 'active' : ''}" type="button" data-restaurant="${restaurant.id}">
+        ${App.escapeHtml(restaurant.name)}
+      </button>
+    `).join('')
+
+    restaurantTabs.querySelectorAll('[data-restaurant]').forEach((button) => {
+      button.addEventListener('click', () => {
+        selectedRestaurantId = Number(button.dataset.restaurant)
+        renderRestaurantTabs()
+        renderMenu()
+      })
+    })
+  }
+
+  function renderMenu() {
+    if (!menuGrid) {
+      return
+    }
+
+    const restaurant = restaurants.find((item) => item.id === selectedRestaurantId)
+    const items = restaurant?.menu_items || []
+
+    if (!items.length) {
+      menuGrid.innerHTML = '<p class="empty-cart">Esta loja ainda nao publicou itens. Escolha outra unidade.</p>'
+      return
+    }
+
+    menuGrid.innerHTML = items.map((item) => `
+      <article class="menu-card">
+        <span class="eyebrow">${App.escapeHtml(item.title)}</span>
+        <h3>${App.escapeHtml(item.name)}</h3>
+        <p>${App.escapeHtml(item.description)}</p>
+        <div class="menu-meta">
+          <strong>${App.formatCurrency(item.price)}</strong>
+          <button class="button button-primary small-button" type="button" data-add="${item.id}">Adicionar</button>
+        </div>
+      </article>
+    `).join('')
+
+    menuGrid.querySelectorAll('[data-add]').forEach((button) => {
+      button.addEventListener('click', () => addToCart(Number(button.dataset.add)))
+    })
+  }
+
+  function addToCart(menuItemId) {
+    const item = restaurants
+      .flatMap((restaurant) => restaurant.menu_items || [])
+      .find((menuItem) => menuItem.id === menuItemId)
+
+    if (!item) {
+      return
+    }
+
+    cart.push({
+      menu_item_id: item.id,
+      name: item.name,
+      price: Number(item.price || 0)
+    })
+    renderCart()
+    setMessage(`${item.name} adicionado ao carrinho.`, 'success')
+  }
+
+  function renderCart() {
+    if (!cartItems || !cartTotal) {
+      return
+    }
+
+    if (!cart.length) {
+      cartItems.innerHTML = '<p class="empty-cart">Seu carrinho esta vazio.</p>'
+      cartTotal.textContent = App.formatCurrency(0)
+      return
+    }
+
+    const total = cart.reduce((sum, item) => sum + item.price, 0)
+    const groupedNames = Object.values(cart.reduce((accumulator, item) => {
+      const key = item.menu_item_id
+      if (!accumulator[key]) {
+        accumulator[key] = { ...item, quantity: 0 }
+      }
+      accumulator[key].quantity += 1
+      return accumulator
+    }, {}))
+
+    cartItems.innerHTML = groupedNames.map((item) => `
+      <div class="cart-item">
+        <span>${App.escapeHtml(item.name)} x${item.quantity}</span>
+        <strong>${App.formatCurrency(item.price * item.quantity)}</strong>
+      </div>
+    `).join('')
+
+    cartTotal.textContent = App.formatCurrency(total)
+  }
+
+  async function finishOrder() {
+    if (!cart.length) {
+      setMessage('Adicione pelo menos um item para finalizar.', 'error')
+      return
+    }
+
+    const grouped = App.groupCartItems(cart)
+    setMessage('Enviando pedido para o backend...', 'success')
+
+    try {
+      await Promise.all(grouped.map((item) => api.post('/users/orders', item)))
+      cart = []
+      renderCart()
+      setMessage('Pedido enviado com sucesso. Historico detalhado ainda sera implementado para o cliente.', 'success')
+    } catch (error) {
+      setMessage(error?.response?.data?.msg || 'Nao foi possivel concluir o pedido.', 'error')
+    }
+  }
+
+  function setMessage(message, type) {
+    if (!statusMessage) {
+      return
+    }
+
     statusMessage.className = `alert alert-${type}`
     statusMessage.textContent = message
   }
 
-  function renderCart() {
-    if (!cartItems || !cartTotal) return
-
-    if (cart.length === 0) {
-      cartItems.innerHTML = '<p class="empty-cart">Seu carrinho está vazio.</p>'
-      cartTotal.textContent = 'R$ 0,00'
-      return
-    }
-
-    const totalValue = cart.reduce((sum, item) => sum + item.price, 0)
-    cartItems.innerHTML = cart.map((item) => `
-      <div class="cart-item">
-        <span>${item.name}</span>
-        <strong>R$ ${item.price.toFixed(2).replace('.', ',')}</strong>
-      </div>
-    `).join('')
-    cartTotal.textContent = `R$ ${totalValue.toFixed(2).replace('.', ',')}`
+  function showLoginState(message = 'Faca login para ver o cardapio e fazer pedidos.') {
+    guestState.hidden = false
+    guestState.innerHTML = `
+      <h2>Entre para pedir</h2>
+      <p>${App.escapeHtml(message)}</p>
+      <a class="button button-primary" href="login.html">Ir para login</a>
+    `
   }
 
-  if (!Auth.isLoggedIn()) {
-    if (clientContent) clientContent.hidden = true
-    if (clientGuestState) clientGuestState.hidden = false
-    if (clientTopbarActions) clientTopbarActions.hidden = true
-    if (statusMessage) {
-      statusMessage.className = 'alert alert-error'
-      statusMessage.textContent = 'Faça login para ver o cardápio e finalizar seu pedido.'
-    }
-    return
+  function showAccessState() {
+    accessState.hidden = false
+    accessState.innerHTML = `
+      <h2>Conta owner detectada</h2>
+      <p>Esta vitrine e voltada ao fluxo de cliente. Sua conta possui recursos de gestao.</p>
+      <a class="button button-primary" href="homeowner.html">Abrir painel do owner</a>
+    `
   }
-
-  if (clientContent) clientContent.hidden = false
-  if (clientGuestState) clientGuestState.hidden = true
-  if (clientTopbarActions) clientTopbarActions.hidden = false
-
-  window.addToCart = (name, price) => {
-    cart.push({ name, price })
-    renderCart()
-    setMessage(`${name} adicionado ao carrinho.`, 'success')
-  }
-
-  window.finishOrder = async () => {
-    if (cart.length === 0) {
-      setMessage('Adicione ao menos um item para finalizar o pedido.', 'error')
-      return
-    }
-
-    try {
-      setMessage('Enviando pedido...', 'success')
-      cart.length = 0
-      renderCart()
-      setMessage('Pedido finalizado com sucesso! O restaurante recebeu sua solicitação.', 'success')
-    } catch (error) {
-      setMessage('Não foi possível finalizar o pedido.', 'error')
-    }
-  }
-
-  if (finishButton) {
-    finishButton.addEventListener('click', window.finishOrder)
-  }
-
-  try {
-    const response = await api.get('/users/restaurants?page=1&per_page=10')
-    const restaurants = response.data?.restaurants || []
-
-    if (menuGrid && restaurants.length) {
-      const items = restaurants.flatMap((restaurant) => restaurant.menu_items || [])
-      menuGrid.innerHTML = items.slice(0, 6).map((item) => `
-        <article class="menu-card">
-          <h3>${item.name}</h3>
-          <p>${item.description}</p>
-          <div class="menu-meta">
-            <strong>${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price)}</strong>
-            <button class="button button-primary" type="button" onclick="addToCart('${item.name}', ${item.price})">Adicionar</button>
-          </div>
-        </article>
-      `).join('')
-    } else if (menuGrid) {
-      menuGrid.innerHTML = '<p class="empty-cart">Nenhum item disponível no momento.</p>'
-    }
-
-    setMessage('Cardápio carregado com sucesso.', 'success')
-  } catch (error) {
-    setMessage('Não foi possível carregar o cardápio.', 'error')
-    if (menuGrid) {
-      menuGrid.innerHTML = '<p class="empty-cart">Não foi possível carregar o cardápio.</p>'
-    }
-  }
-
-  renderCart()
 })
+
+function show(element) {
+  if (element) {
+    element.hidden = false
+  }
+}
+
+function hide(element) {
+  if (element) {
+    element.hidden = true
+  }
+}

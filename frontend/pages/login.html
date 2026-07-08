@@ -1,68 +1,61 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrar</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <main id="app" class="login-shell" v-cloak>
+      <section class="login-hero">
+        <a class="brand" href="homeclient.html" aria-label="iFood Manager">
+          <span class="brand-mark">iF</span>
+          <span>
+            <strong>iFood</strong>
+            <small>Access</small>
+          </span>
+        </a>
+        <div class="login-copy">
+          <p class="eyebrow">Autenticacao</p>
+          <h1>Entre e siga para a area correta do seu perfil.</h1>
+        </div>
+      </section>
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Entrar - iFood Manager</title>
-        <link rel="stylesheet" href="../style.css">
-    </head>
+      <section class="login-card">
+        <div class="login-card-header">
+          <p class="eyebrow">Sessao</p>
+          <h2>Login no backend</h2>
+        </div>
 
-    <body>
-        <main id="app" class="login-shell" v-cloak>
-            <section class="login-hero">
-                <a class="brand" href="landingpage.html" aria-label="iFood Manager">
-                    <span class="brand-mark">iF</span>
-                    <span>
-                        <strong>iFood</strong>
-                        <small>Manager</small>
-                    </span>
-                </a>
-                <div class="login-copy">
-                    <p class="eyebrow">Restaurantes parceiros</p>
-                    <h1>Controle pedidos, cardapio e faturamento em uma tela.</h1>
-                </div>
-            </section>
+        <form class="form-stack" @submit.prevent="login">
+          <label class="field">
+            <span>Email</span>
+            <input type="text" placeholder="seu@email.com" v-model="email" autocomplete="username" />
+          </label>
 
-            <section class="login-card">
-                <div class="login-card-header">
-                    <p class="eyebrow">Acesso</p>
-                    <h2>Entrar no painel</h2>
-                </div>
+          <label class="field">
+            <span>Senha</span>
+            <input type="password" placeholder="Digite sua senha" v-model="password" autocomplete="current-password" />
+          </label>
 
-                <form class="form-stack" @submit.prevent="login">
-                    <label class="field">
-                        <span>Email</span>
-                        <input type="text" placeholder="seu@email.com" v-model="email" autocomplete="username">
-                    </label>
+          <button type="submit" class="button button-primary" :disabled="loginLoading">
+            {{ loginLoading ? 'Entrando...' : 'Entrar' }}
+          </button>
+        </form>
 
-                    <label class="field">
-                        <span>Senha</span>
-                        <input type="password" placeholder="Digite sua senha" v-model="password" autocomplete="current-password">
-                    </label>
+        <p v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</p>
+        <p v-if="tokenReceived" class="alert alert-success">Login realizado.</p>
 
-                    <button type="submit" class="button button-primary" :disabled="loginLoading">
-                        <i data-lucide="log-in"></i>
-                        {{ loginLoading ? 'Entrando...' : 'Entrar' }}
-                    </button>
-                </form>
+        <a class="login-back" href="homeclient.html">Voltar para a vitrine</a>
+      </section>
+    </main>
 
-                <p v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</p>
-                <p v-if="tokenReceived" class="alert alert-success">Login realizado.</p>
-
-                <a class="login-back" href="landingpage.html">
-                    <i data-lucide="arrow-left"></i>
-                    Voltar ao painel
-                </a>
-            </section>
-        </main>
-
-        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-        <script src="https://unpkg.com/lucide@latest"></script>
-        <script src="../js/api.js"></script>
-        <script src="../js/auth.js"></script>
-        <script src="../js/login.js"></script>
-    </body>
-
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app-utils.js"></script>
+    <script src="../js/login.js"></script>
+  </body>
 </html>

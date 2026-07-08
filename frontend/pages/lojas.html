@@ -3,80 +3,82 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lojas</title>
+    <title>Lojas Owner</title>
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
     <main class="app-shell">
       <aside class="sidebar">
-        <a class="brand" href="homeowner.html" aria-label="iFood Manager">
+        <a class="brand" href="homeowner.html" aria-label="iFood Owner">
           <span class="brand-mark">iF</span>
           <span>
             <strong>iFood</strong>
-            <small>Manager</small>
+            <small>Owner</small>
           </span>
         </a>
 
         <nav class="nav-list">
           <a class="nav-item" href="homeowner.html">Resumo</a>
           <a class="nav-item" href="pedidos.html">Pedidos</a>
-          <a class="nav-item" href="cardapio.html">Cardápio</a>
+          <a class="nav-item" href="cardapio.html">Cardapio</a>
           <a class="nav-item active" href="lojas.html">Lojas</a>
           <a class="nav-item" href="faturamento.html">Faturamento</a>
         </nav>
 
         <div class="sidebar-footer">
-          <p>Gerencie unidades</p>
-          <a class="button button-ghost" href="homeclient.html">Cliente</a>
+          <p id="sidebarUserBadge">Sessao nao iniciada</p>
+          <button id="logoutButton" class="button button-ghost small-button" type="button">Sair</button>
         </div>
       </aside>
 
       <section class="workspace">
         <header class="topbar">
           <div>
-            <p class="page-kicker">Lojas</p>
-            <h1 class="page-title">Unidades cadastradas</h1>
-            <p class="page-subtitle">Visualize as unidades ativas e mantenha a operação organizada.</p>
-          </div>
-          <div class="topbar-actions">
-            <a class="button button-primary" href="homeowner.html">Voltar ao resumo</a>
+            <p class="page-kicker">Gestao de lojas</p>
+            <h1 class="page-title">Unidades do owner</h1>
+            <p class="page-subtitle">CRUD conectado ao endpoint `/api/owner/restaurants` com contagem de itens vinculados.</p>
           </div>
         </header>
 
-        <section class="view-stack">
-          <div class="restaurant-grid">
-            <article class="restaurant-card">
-              <div class="restaurant-avatar">A</div>
-              <div>
-                <h3>Unidade Centro</h3>
-                <p>Rua Augusta, 400 · Aberta até 23h</p>
-                <small>Ativa</small>
-              </div>
-              <a class="button button-ghost" href="homeclient.html">Visualizar</a>
-            </article>
+        <section id="pageAccessState" class="guest-state" hidden></section>
 
-            <article class="restaurant-card">
-              <div class="restaurant-avatar">B</div>
-              <div>
-                <h3>Unidade Vila Nova</h3>
-                <p>Av. Brasil, 55 · Aberta até 22h</p>
-                <small>Ativa</small>
-              </div>
-              <a class="button button-ghost" href="homeclient.html">Visualizar</a>
-            </article>
+        <section id="restaurantsPageContent" class="view-stack" hidden>
+          <p id="pageAlert" class="alert alert-success">Carregando...</p>
 
-            <article class="restaurant-card">
-              <div class="restaurant-avatar">C</div>
+          <form id="restaurantForm" class="editor-panel">
+            <div class="panel-header">
               <div>
-                <h3>Unidade Pinheiros</h3>
-                <p>Rua do Oratório, 150 · Aberta até 21h</p>
-                <small>Ativa</small>
+                <p class="eyebrow">Formulario</p>
+                <h2 id="restaurantFormTitle">Nova loja</h2>
               </div>
-              <a class="button button-ghost" href="homeclient.html">Visualizar</a>
-            </article>
-          </div>
+            </div>
+
+            <div class="form-grid two-cols">
+              <label class="field">
+                <span>Nome</span>
+                <input id="restaurantName" type="text" required />
+              </label>
+              <label class="field">
+                <span>Descricao</span>
+                <input id="restaurantDescription" type="text" required />
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button id="restaurantCancelButton" class="button button-ghost" type="button">Limpar</button>
+              <button id="restaurantSaveButton" class="button button-primary" type="submit">Criar loja</button>
+            </div>
+          </form>
+
+          <section id="restaurantCards" class="restaurant-grid"></section>
         </section>
       </section>
     </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app-utils.js"></script>
+    <script src="../js/owner-restaurants.js"></script>
   </body>
 </html>

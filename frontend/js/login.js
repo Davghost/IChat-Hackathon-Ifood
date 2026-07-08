@@ -28,8 +28,10 @@ createApp({
         })
 
         Auth.saveToken(response.data.access_token)
+        const userResponse = await api.get('/users/me')
+        const user = userResponse.data || {}
         tokenReceived.value = true
-        location.href = 'homeowner.html'
+        location.href = App.defaultHomeForRole(user.role)
       } catch (error) {
         errorMessage.value = error?.response?.data?.msg || 'Nao foi possivel fazer login.'
         console.error(error)

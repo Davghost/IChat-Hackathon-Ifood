@@ -1,6 +1,6 @@
 function saveToken(token) {
   localStorage.setItem('authToken', token)
-  applyToken()
+  syncToken()
 }
 
 function getToken() {
@@ -25,7 +25,13 @@ function getAuthorizationHeader() {
 
 function logout() {
   localStorage.removeItem('authToken')
-  applyToken()
+  syncToken()
+}
+
+function syncToken() {
+  if (typeof applyToken === 'function') {
+    applyToken()
+  }
 }
 
 const Auth = {
@@ -36,4 +42,4 @@ const Auth = {
   logout
 }
 
-applyToken()
+syncToken()
