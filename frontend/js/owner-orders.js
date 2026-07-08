@@ -114,7 +114,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       <article class="order-card">
         <div class="order-card-top">
           <div>
-            <p class="eyebrow">#${order.id}</p>
             <h3>${App.escapeHtml(order.customer.username)}</h3>
           </div>
           <span class="status-pill ${App.statusClass(order.status)}">${App.statusLabel(order.status)}</span>

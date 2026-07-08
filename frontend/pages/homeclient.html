@@ -7,13 +7,12 @@
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell" v-cloak>
       <aside class="sidebar">
         <a class="brand" href="homeclient.html" aria-label="iFood Cliente">
           <span class="brand-mark">iF</span>
           <span>
-            <strong>iFood</strong>
-            <small>Client</small>
+            <strong>Painel de controle</strong>
           </span>
         </a>
 
@@ -24,7 +23,7 @@
         </nav>
 
         <div class="sidebar-footer">
-          <p id="clientIdentity">Sessao nao iniciada</p>
+          <p id="clientIdentity">Sessão nao iniciada</p>
           <button id="logoutButton" class="button button-ghost small-button" type="button">Sair</button>
         </div>
       </aside>
@@ -41,18 +40,13 @@
           </div>
         </header>
 
-        <section id="clientGuestState" class="guest-state" hidden></section>
-        <section id="clientAccessState" class="guest-state" hidden></section>
-
         <section id="clientContent" class="view-stack" hidden>
           <section class="hero-client">
             <p class="eyebrow">Entrega local</p>
             <h2>Cardapios disponiveis para pedido imediato.</h2>
-            <p>O backend atual ja entrega restaurantes, itens e criacao de pedidos. Historico detalhado do cliente ainda entra como placeholder.</p>
           </section>
 
           <div id="restaurantTabs" class="tabs-row"></div>
-          <p id="clientStatusMessage" class="alert alert-success">Carregando vitrine...</p>
 
           <div class="content-grid">
             <section class="panel">
@@ -96,5 +90,6 @@
     <script src="../js/auth.js"></script>
     <script src="../js/app-utils.js"></script>
     <script src="../js/client-store.js"></script>
+    <script src="../js/guard.js"></script>
   </body>
 </html>

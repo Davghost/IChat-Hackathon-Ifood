@@ -118,7 +118,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const answer = response.data || {}
       assistantAnswer.innerHTML = `
         <strong>${App.escapeHtml(answer.answer || '')}</strong>
-        <small>Fonte: ${App.escapeHtml(answer.source || 'local')}</small>
       `
       setAlert('Resposta recebida.', 'success')
     } catch (error) {
@@ -142,14 +141,28 @@ function renderRevenueBars(points) {
   }
 
   const max = Math.max(...points.map((point) => Number(point.revenue || 0)), 1)
-  return points.slice(-7).map((point) => {
-    const height = Math.max(18, Math.round((Number(point.revenue || 0) / max) * 100))
-    return `
-      <span style="height:${height}%">
-        <small>${App.escapeHtml(point.date.slice(5))}</small>
-      </span>
-    `
-  }).join('')
+  const visiblePoints = points.slice(-6)
+
+  return `
+    <div class="mini-chart">
+      ${visiblePoints.map((point) => {
+        const value = Number(point.revenue || 0)
+        const height = Math.max(24, Math.round((value / max) * 100))
+        const date = App.escapeHtml(point.date?.slice(5) || '')
+        const amount = App.escapeHtml(App.formatCurrency(value))
+
+        return `
+          <div class="mini-bar-wrap">
+            <div class="mini-bar-value">${amount}</div>
+            <div class="mini-bar-track">
+              <div class="mini-bar" style="height:${height}%; background:linear-gradient(180deg, #ff8a3d 0%, #f59f00 100%);"></div>
+            </div>
+            <strong>${date}</strong>
+          </div>
+        `
+      }).join('')}
+    </div>
+  `
 }
 
 function showState(element, message, buttonLabel, href) {

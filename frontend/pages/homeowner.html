@@ -7,26 +7,25 @@
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell" v-cloak>
       <aside class="sidebar">
         <a class="brand" href="homeowner.html" aria-label="iFood Manager">
-          <span class="brand-mark">iF</span>
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTY4R3cNywEEb-Mdn3Jipkc4Ex0T30tPDX3ONaiJyYm9Q&s=10" alt="logo-ifood" class="logo">
           <span>
-            <strong>iFood</strong>
-            <small>Owner</small>
+            <strong>Painel de controle</strong>
           </span>
         </a>
 
-        <nav class="nav-list" aria-label="Navegacao owner">
+        <nav class="nav-list" aria-label="Navegação">
           <a class="nav-item active" href="homeowner.html">Resumo</a>
           <a class="nav-item" href="pedidos.html">Pedidos</a>
           <a class="nav-item" href="cardapio.html">Cardapio</a>
-          <a class="nav-item" href="lojas.html">Lojas</a>
+     
           <a class="nav-item" href="faturamento.html">Faturamento</a>
         </nav>
 
         <div class="sidebar-footer">
-          <p id="ownerIdentity">Sessao nao iniciada</p>
+          <p id="ownerIdentity">Sessão nao iniciada</p>
           <button id="logoutButton" class="button button-ghost small-button" type="button">Sair</button>
         </div>
       </aside>
@@ -34,27 +33,13 @@
       <section class="workspace">
         <header class="topbar">
           <div>
-            <p class="page-kicker">Owner dashboard</p>
-            <h1 class="page-title">Acompanhamento da operacao</h1>
+            <p class="page-kicker">Dashboard</p>
+            <h1 class="page-title">Acompanhamento da operação</h1>
             <p class="page-subtitle">Resumo com dados reais do backend para pedidos, receita e desempenho do cardapio.</p>
-          </div>
-          <div class="topbar-actions">
-            <a class="button button-primary" href="cardapio.html">Novo item</a>
-            <a class="button button-ghost" href="homeclient.html">Ver area client</a>
           </div>
         </header>
 
-        <section id="ownerGuestState" class="guest-state" hidden>
-          <h2>Entre para abrir o painel owner</h2>
-          <p>Faça login para acompanhar pedidos, métricas, faturamento e previsões do restaurante.</p>
-          <a class="button button-primary" href="login.html">Ir para login</a>
-        </section>
-
-        <section id="ownerAccessState" class="guest-state" hidden></section>
-
         <section id="ownerContent" class="view-stack" hidden>
-          <p id="ownerStatusMessage" class="alert alert-success">Carregando painel...</p>
-
           <div class="metric-grid">
             <article class="metric-card metric-red">
               <span>Pedidos hoje</span>
@@ -131,5 +116,6 @@
     <script src="../js/auth.js"></script>
     <script src="../js/app-utils.js"></script>
     <script src="../js/owner-dashboard.js"></script>
+    <script src="../js/guard.js"></script>
   </body>
 </html>

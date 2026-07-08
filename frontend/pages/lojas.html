@@ -7,13 +7,12 @@
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell" v-cloak>
       <aside class="sidebar">
         <a class="brand" href="homeowner.html" aria-label="iFood Owner">
           <span class="brand-mark">iF</span>
           <span>
-            <strong>iFood</strong>
-            <small>Owner</small>
+            <strong>Painel de controle</strong>
           </span>
         </a>
 
@@ -40,10 +39,9 @@
           </div>
         </header>
 
-        <section id="pageAccessState" class="guest-state" hidden></section>
 
         <section id="restaurantsPageContent" class="view-stack" hidden>
-          <p id="pageAlert" class="alert alert-success">Carregando...</p>
+  
 
           <form id="restaurantForm" class="editor-panel">
             <div class="panel-header">
@@ -80,5 +78,6 @@
     <script src="../js/auth.js"></script>
     <script src="../js/app-utils.js"></script>
     <script src="../js/owner-restaurants.js"></script>
+    <script src="../js/guard.js"></script>
   </body>
 </html>

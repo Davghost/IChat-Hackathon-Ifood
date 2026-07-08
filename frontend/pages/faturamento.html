@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Faturamento Owner</title>
+    <title>Faturamento</title>
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell" v-cloak>
       <aside class="sidebar">
         <a class="brand" href="homeowner.html" aria-label="iFood Owner">
-          <span class="brand-mark">iF</span>
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTY4R3cNywEEb-Mdn3Jipkc4Ex0T30tPDX3ONaiJyYm9Q&s=10" alt="logo-ifood" class="logo">
+          
           <span>
-            <strong>iFood</strong>
-            <small>Owner</small>
+            <strong>Painel de controle</strong>
           </span>
         </a>
 
@@ -21,7 +21,7 @@
           <a class="nav-item" href="homeowner.html">Resumo</a>
           <a class="nav-item" href="pedidos.html">Pedidos</a>
           <a class="nav-item" href="cardapio.html">Cardapio</a>
-          <a class="nav-item" href="lojas.html">Lojas</a>
+         
           <a class="nav-item active" href="faturamento.html">Faturamento</a>
         </nav>
 
@@ -34,21 +34,17 @@
       <section class="workspace">
         <header class="topbar">
           <div>
-            <p class="page-kicker">Analytics owner</p>
+            <p class="page-kicker">Analise financeira</p>
             <h1 class="page-title">Financeiro e previsoes</h1>
-            <p class="page-subtitle">Painel alimentado por analytics, forecasts e assistente do backend owner.</p>
           </div>
         </header>
 
-        <section id="pageAccessState" class="guest-state" hidden></section>
-
         <section id="analyticsPageContent" class="view-stack" hidden>
-          <p id="pageAlert" class="alert alert-success">Carregando...</p>
-
           <div class="revenue-layout">
             <section class="panel revenue-panel">
               <span>Receita acumulada</span>
               <strong id="revenueValue">R$ 0,00</strong>
+              <br>
               <div id="revenueBars" class="revenue-bars"></div>
             </section>
 
@@ -104,5 +100,6 @@
     <script src="../js/auth.js"></script>
     <script src="../js/app-utils.js"></script>
     <script src="../js/owner-analytics.js"></script>
+    <script src="../js/guard.js"></script>
   </body>
 </html>

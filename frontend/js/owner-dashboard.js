@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? orders.map((order) => `
           <article class="order-row">
             <div>
-              <strong>#${order.id} ${App.escapeHtml(order.customer.username)}</strong>
+              <strong>${App.escapeHtml(order.customer.username)}</strong>
               <span>${App.escapeHtml(order.menu_item.name)} · ${App.escapeHtml(order.restaurant.name)}</span>
             </div>
             <div class="order-meta">
@@ -130,16 +130,23 @@ function renderBars(points, key, labelFormatter) {
 
   const values = points.map((point) => Number(point[key] || 0))
   const max = Math.max(...values, 1)
+  const visiblePoints = points.slice(-6)
 
   return `
     <div class="mini-chart">
-      ${points.map((point) => {
-        const height = Math.max(14, Math.round((Number(point[key] || 0) / max) * 100))
+      ${visiblePoints.map((point) => {
+        const value = Number(point[key] || 0)
+        const height = Math.max(24, Math.round((value / max) * 100))
+        const label = App.escapeHtml(labelFormatter(point))
+        const date = App.escapeHtml(point.date?.slice(5) || point.label || '')
+
         return `
           <div class="mini-bar-wrap">
-            <div class="mini-bar" style="height:${height}%"></div>
-            <strong>${App.escapeHtml(point.date.slice(5))}</strong>
-            <small>${App.escapeHtml(labelFormatter(point))}</small>
+            <div class="mini-bar-value">${label}</div>
+            <div class="mini-bar-track">
+              <div class="mini-bar" style="height:${height}%"></div>
+            </div>
+            <strong>${date}</strong>
           </div>
         `
       }).join('')}
