@@ -436,6 +436,18 @@ a {
   color: #047857;
 }
 
+.input-badge {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #decfd2;
+  border-radius: 8px;
+  background: #fbf8f8;
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .status-cancelled {
   background: #f3f4f6;
   color: #4b5563;
@@ -598,6 +610,10 @@ textarea:focus {
   grid-template-columns: 56px minmax(0, 1fr) auto;
   gap: 14px;
   align-items: start;
+}
+
+.single-restaurant-grid {
+  grid-template-columns: 1fr;
 }
 
 .restaurant-avatar {

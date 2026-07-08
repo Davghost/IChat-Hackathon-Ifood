@@ -32,6 +32,11 @@ DEFAULT_FORECAST_DAYS = 7
 MAX_FORECAST_DAYS = 14
 TOP_MENU_ITEMS_LIMIT = 5
 AI_SERVICE_TIMEOUT_SECONDS = 2
+AI_FORECAST_PATH = "/forecast"
+AI_PLACEHOLDER_PATH = "/placeholders/owner-insights"
+AI_PLACEHOLDER_NOTE = (
+    "PLACEHOLDER: payload e estrutura preparados para a futura IA em http://localhost:8000."
+)
 APP_TIMEZONE = timezone(timedelta(hours=-3), name="America/Sao_Paulo")
 WEEKDAY_NAMES = {
     0: "segunda-feira",
@@ -42,28 +47,6 @@ WEEKDAY_NAMES = {
     5: "sabado",
     6: "domingo",
 }
-PRESET_AI_QUESTIONS = [
-    {
-        "question": "Quanto eu faturei nas ultimas 4 semanas?",
-        "description": "Soma o faturamento recente do restaurante.",
-    },
-    {
-        "question": "Qual prato mais vendeu no mes passado?",
-        "description": "Aponta o item com maior volume vendido no mes anterior.",
-    },
-    {
-        "question": "Qual dia da semana vende melhor?",
-        "description": "Mostra o melhor dia historico em receita.",
-    },
-    {
-        "question": "Quanto devo vender amanha?",
-        "description": "Entrega uma previsao simples de faturamento.",
-    },
-    {
-        "question": "Quantos pedidos devo receber amanha?",
-        "description": "Entrega uma previsao simples de demanda.",
-    },
-]
 
 
 class RestaurantMessage(BaseModel):
@@ -82,7 +65,6 @@ class MenuItemMessage(BaseModel):
     name: str
     price: float
     description: str
-    restaurant_id: int
 
 
 class MenuItemResponse(BaseModel):
@@ -108,11 +90,7 @@ class DashboardQuery(BaseModel):
 
 class OrdersQuery(BaseModel):
     page: int = Field(default=1, ge=1)
-    per_page: int = Field(
-        default=DEFAULT_ORDERS_PER_PAGE,
-        ge=1,
-        le=MAX_ORDERS_PER_PAGE,
-    )
+    per_page: int = Field(default=DEFAULT_ORDERS_PER_PAGE, ge=1, le=MAX_ORDERS_PER_PAGE)
     days: int = Field(default=DEFAULT_ANALYTICS_DAYS, ge=1, le=MAX_ANALYTICS_DAYS)
     start_date: date | None = None
     end_date: date | None = None
@@ -133,13 +111,6 @@ class AnalyticsHistoryQuery(BaseModel):
 class ForecastQuery(BaseModel):
     days: int = Field(default=DEFAULT_FORECAST_DAYS, ge=1, le=MAX_FORECAST_DAYS)
     restaurant_id: int | None = None
-
-
-class AssistantChatMessage(BaseModel):
-    question: str
-    restaurant_id: int | None = None
-    start_date: date | None = None
-    end_date: date | None = None
 
 
 class OrderStatusUpdateMessage(BaseModel):
@@ -261,23 +232,6 @@ class AnalyticsHistoryResponse(BaseModel):
     top_menu_items: list[TopMenuItemMetricsResponse]
 
 
-class AssistantTemplateResponse(BaseModel):
-    question: str
-    description: str
-
-
-class AssistantTemplatesResponse(BaseModel):
-    questions: list[AssistantTemplateResponse]
-
-
-class AssistantAnswerResponse(BaseModel):
-    question: str
-    answer: str
-    source: str
-    used_fallback: bool
-    supporting_metrics: dict[str, str]
-
-
 class ForecastPointResponse(BaseModel):
     date: str
     predicted_revenue: float
@@ -287,11 +241,34 @@ class ForecastPointResponse(BaseModel):
 
 class ForecastResponse(BaseModel):
     source: str
+    source_url: str
     used_fallback: bool
     period_days: int
     generated_at: datetime
     explanation: str
+    placeholder_note: str | None = None
     forecasts: list[ForecastPointResponse]
+
+
+class AIPlaceholderMetricResponse(BaseModel):
+    label: str
+    value: str
+    placeholder_note: str
+
+
+class AIPlaceholderInsightResponse(BaseModel):
+    title: str
+    description: str
+    placeholder_note: str
+
+
+class AIPlaceholdersResponse(BaseModel):
+    source: str
+    source_url: str
+    generated_at: datetime
+    placeholder_note: str
+    metrics: list[AIPlaceholderMetricResponse]
+    insights: list[AIPlaceholderInsightResponse]
 
 
 def owner_required():
@@ -310,6 +287,10 @@ def validate_status(status):
 
 def find_owner_restaurant(restaurant_id):
     return Restaurant.query.filter_by(id=restaurant_id, owner_id=current_user.id).first()
+
+
+def get_owner_restaurant():
+    return Restaurant.query.filter_by(owner_id=current_user.id).first()
 
 
 def find_owner_order(order_id):
@@ -611,8 +592,12 @@ def analytics_history_response(start_date, end_date, orders):
     )
 
 
+def ai_service_base_url():
+    return current_app.config["AI_SERVICE_BASE_URL"].rstrip("/")
+
+
 def ai_service_request(path, payload):
-    request_url = f"{current_app.config['AI_SERVICE_BASE_URL'].rstrip('/')}{path}"
+    request_url = f"{ai_service_base_url()}{path}"
     body = json.dumps(payload).encode("utf-8")
     http_request = urllib_request.Request(
         request_url,
@@ -626,6 +611,25 @@ def ai_service_request(path, payload):
             return json.loads(response.read().decode("utf-8"))
     except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError, json.JSONDecodeError):
         return None
+
+
+def build_orders_history(orders, restaurant_id=None):
+    history = []
+    for order in orders:
+        if restaurant_id is not None and order.restaurant_id != restaurant_id:
+            continue
+        order_date = localize_datetime(order.created_at).date()
+        history.append(
+            {
+                "date": order_date.isoformat(),
+                "revenue": round(order.total_price, 2),
+                "orders": 1,
+                "items_sold": order.quantity,
+                "menu_item": order.menu_item.name,
+                "status": order.status,
+            }
+        )
+    return history
 
 
 def same_weekday_forecast_points(orders, days, restaurant_id=None):
@@ -671,226 +675,179 @@ def same_weekday_forecast_points(orders, days, restaurant_id=None):
     return forecasts
 
 
-def forecast_response(days, orders, restaurant_id=None):
-    history = []
-    for order in orders:
-        order_date = localize_datetime(order.created_at).date()
-        if restaurant_id is not None and order.restaurant_id != restaurant_id:
-            continue
-        history.append(
-            {
-                "date": order_date.isoformat(),
-                "revenue": order.total_price,
-                "orders": 1,
-                "items_sold": order.quantity,
-            }
-        )
-
-    payload = {
-        "owner_id": current_user.id,
-        "restaurant_id": restaurant_id,
-        "days": days,
-        "history": history,
-    }
-    external_response = ai_service_request("/forecast", payload)
-    if external_response and isinstance(external_response.get("forecasts"), list):
-        forecasts = [
+def normalize_forecast_points(items):
+    normalized = []
+    for item in items:
+        normalized.append(
             ForecastPointResponse(
-                date=item["date"],
+                date=str(item["date"]),
                 predicted_revenue=round(float(item["predicted_revenue"]), 2),
                 predicted_orders=int(item["predicted_orders"]),
                 predicted_items_sold=int(item["predicted_items_sold"]),
             )
-            for item in external_response["forecasts"]
-        ]
+        )
+    return normalized
+
+
+def forecast_response(days, orders, restaurant_id=None):
+    request_url = f"{ai_service_base_url()}{AI_FORECAST_PATH}"
+    payload = {
+        "owner_id": current_user.id,
+        "restaurant_id": restaurant_id,
+        "days": days,
+        "history": build_orders_history(orders, restaurant_id=restaurant_id),
+        "placeholder": True,
+        "placeholder_note": AI_PLACEHOLDER_NOTE,
+    }
+    external_response = ai_service_request(AI_FORECAST_PATH, payload)
+    if external_response and isinstance(external_response.get("forecasts"), list):
         return ForecastResponse(
-            source="external",
+            source="external_placeholder",
+            source_url=request_url,
             used_fallback=False,
             period_days=days,
             generated_at=datetime.now(APP_TIMEZONE),
             explanation=external_response.get(
                 "explanation",
-                "Previsao retornada pelo servico de machine learning externo.",
+                "PLACEHOLDER: previsao retornada pela integracao temporaria da IA.",
             ),
-            forecasts=forecasts,
+            placeholder_note=AI_PLACEHOLDER_NOTE,
+            forecasts=normalize_forecast_points(external_response["forecasts"]),
         )
 
-    forecasts = same_weekday_forecast_points(orders, days, restaurant_id=restaurant_id)
     return ForecastResponse(
-        source="local_fallback",
+        source="local_placeholder_fallback",
+        source_url=request_url,
         used_fallback=True,
         period_days=days,
         generated_at=datetime.now(APP_TIMEZONE),
         explanation=(
-            "Previsao local baseada na media dos mesmos dias da semana e, "
-            "na falta deles, na media recente do historico."
+            "PLACEHOLDER: integracao futura indisponivel em http://localhost:8000; "
+            "foi usada uma previsao local baseada no historico."
         ),
-        forecasts=forecasts,
+        placeholder_note=AI_PLACEHOLDER_NOTE,
+        forecasts=same_weekday_forecast_points(orders, days, restaurant_id=restaurant_id),
     )
 
 
-def previous_month_range(reference_date):
-    first_day_current_month = reference_date.replace(day=1)
-    last_day_previous_month = first_day_current_month - timedelta(days=1)
-    first_day_previous_month = last_day_previous_month.replace(day=1)
-    return first_day_previous_month, last_day_previous_month
+def summary_snapshot(summary):
+    return {
+        "total_orders": summary.total_orders,
+        "total_revenue": round(summary.total_revenue, 2),
+        "items_sold": summary.items_sold,
+        "average_ticket": round(summary.average_ticket, 2),
+        "best_weekday": summary.best_weekday or "",
+        "top_menu_item": summary.top_menu_item.name if summary.top_menu_item else "",
+    }
 
 
-def assistant_fallback_answer(question, orders, restaurant_id=None, start_date=None, end_date=None):
-    normalized_question = question.strip().lower()
-    today = datetime.now(APP_TIMEZONE).date()
-    filtered_orders = orders
-    if restaurant_id is not None:
-        filtered_orders = [order for order in filtered_orders if order.restaurant_id == restaurant_id]
+def build_placeholder_metrics(summary):
+    top_item_name = summary.top_menu_item.name if summary.top_menu_item else "Sem dados"
+    best_day = summary.best_weekday or "Sem dados"
 
-    if start_date and end_date:
-        filtered_orders = [
-            order for order in filtered_orders if order_in_period(order, start_date, end_date)
-        ]
+    return [
+        AIPlaceholderMetricResponse(
+            label="PLACEHOLDER: faturamento do periodo",
+            value=f"R$ {summary.total_revenue:.2f}",
+            placeholder_note=AI_PLACEHOLDER_NOTE,
+        ),
+        AIPlaceholderMetricResponse(
+            label="PLACEHOLDER: ticket medio sugerido pela IA",
+            value=f"R$ {summary.average_ticket:.2f}",
+            placeholder_note=AI_PLACEHOLDER_NOTE,
+        ),
+        AIPlaceholderMetricResponse(
+            label="PLACEHOLDER: item em destaque",
+            value=top_item_name,
+            placeholder_note=AI_PLACEHOLDER_NOTE,
+        ),
+        AIPlaceholderMetricResponse(
+            label="PLACEHOLDER: melhor dia para campanha",
+            value=best_day,
+            placeholder_note=AI_PLACEHOLDER_NOTE,
+        ),
+    ]
 
-    if "ultimas 4 semanas" in normalized_question or "ultimas quatro semanas" in normalized_question:
-        period_start = today - timedelta(days=27)
-        period_orders = [
-            order for order in filtered_orders if order_in_period(order, period_start, today)
-        ]
-        revenue = round(sum(order.total_price for order in period_orders), 2)
-        return AssistantAnswerResponse(
-            question=question,
-            answer=f"Seu faturamento nas ultimas 4 semanas foi de R$ {revenue:.2f}.",
-            source="local_fallback",
-            used_fallback=True,
-            supporting_metrics={
-                "start_date": period_start.isoformat(),
-                "end_date": today.isoformat(),
-                "total_revenue": f"{revenue:.2f}",
-            },
-        )
 
-    if "mes passado" in normalized_question and ("prato" in normalized_question or "comida" in normalized_question):
-        period_start, period_end = previous_month_range(today)
-        period_orders = [
-            order for order in filtered_orders if order_in_period(order, period_start, period_end)
-        ]
-        top_items = build_top_menu_items(period_orders, limit=1)
-        if not top_items:
-            answer = "Nao houve vendas no mes passado para calcular o prato mais vendido."
-            metrics = {"start_date": period_start.isoformat(), "end_date": period_end.isoformat()}
-        else:
-            item = top_items[0]
-            answer = (
-                f"No mes passado, o prato mais vendido foi {item.name}, com "
-                f"{item.quantity} unidades e R$ {item.revenue:.2f} em receita."
+def build_placeholder_insights(summary):
+    top_item_name = summary.top_menu_item.name if summary.top_menu_item else "um item sem historico"
+    best_day = summary.best_weekday or "um dia ainda nao identificado"
+
+    return [
+        AIPlaceholderInsightResponse(
+            title="PLACEHOLDER: oportunidade comercial",
+            description=(
+                f"A futura IA pode recomendar promocao para {top_item_name} "
+                f"com base no faturamento atual de R$ {summary.total_revenue:.2f}."
+            ),
+            placeholder_note=AI_PLACEHOLDER_NOTE,
+        ),
+        AIPlaceholderInsightResponse(
+            title="PLACEHOLDER: planejamento operacional",
+            description=(
+                f"A futura IA pode sugerir reforco de equipe em {best_day} "
+                f"e revisar ticket medio atual de R$ {summary.average_ticket:.2f}."
+            ),
+            placeholder_note=AI_PLACEHOLDER_NOTE,
+        ),
+    ]
+
+
+def normalize_placeholder_metrics(items):
+    normalized = []
+    for item in items:
+        normalized.append(
+            AIPlaceholderMetricResponse(
+                label=str(item.get("label", "PLACEHOLDER: metrica sem titulo")),
+                value=str(item.get("value", "")),
+                placeholder_note=str(item.get("placeholder_note", AI_PLACEHOLDER_NOTE)),
             )
-            metrics = {
-                "start_date": period_start.isoformat(),
-                "end_date": period_end.isoformat(),
-                "top_menu_item": item.name,
-                "quantity": str(item.quantity),
-                "revenue": f"{item.revenue:.2f}",
-            }
-
-        return AssistantAnswerResponse(
-            question=question,
-            answer=answer,
-            source="local_fallback",
-            used_fallback=True,
-            supporting_metrics=metrics,
         )
+    return normalized
 
-    if "dia da semana" in normalized_question and "vende melhor" in normalized_question:
-        top_weekday = best_weekday(filtered_orders)
-        answer = (
-            f"O melhor dia da semana em receita e {top_weekday}."
-            if top_weekday
-            else "Ainda nao ha vendas suficientes para identificar o melhor dia da semana."
+
+def normalize_placeholder_insights(items):
+    normalized = []
+    for item in items:
+        normalized.append(
+            AIPlaceholderInsightResponse(
+                title=str(item.get("title", "PLACEHOLDER: insight sem titulo")),
+                description=str(item.get("description", "")),
+                placeholder_note=str(item.get("placeholder_note", AI_PLACEHOLDER_NOTE)),
+            )
         )
-        return AssistantAnswerResponse(
-            question=question,
-            answer=answer,
-            source="local_fallback",
-            used_fallback=True,
-            supporting_metrics={"best_weekday": top_weekday or ""},
-        )
-
-    if "quanto devo vender amanha" in normalized_question or (
-        "amanha" in normalized_question and "fatur" in normalized_question
-    ):
-        forecast = forecast_response(1, orders, restaurant_id=restaurant_id)
-        point = forecast.forecasts[0]
-        return AssistantAnswerResponse(
-            question=question,
-            answer=(
-                f"A previsao para amanha e faturar R$ {point.predicted_revenue:.2f}, "
-                f"com cerca de {point.predicted_orders} pedidos."
-            ),
-            source=forecast.source,
-            used_fallback=forecast.used_fallback,
-            supporting_metrics={
-                "date": point.date,
-                "predicted_revenue": f"{point.predicted_revenue:.2f}",
-                "predicted_orders": str(point.predicted_orders),
-            },
-        )
-
-    if "quantos pedidos devo receber amanha" in normalized_question or (
-        "amanha" in normalized_question and "pedido" in normalized_question
-    ):
-        forecast = forecast_response(1, orders, restaurant_id=restaurant_id)
-        point = forecast.forecasts[0]
-        return AssistantAnswerResponse(
-            question=question,
-            answer=(
-                f"A previsao para amanha e receber {point.predicted_orders} pedidos "
-                f"e vender cerca de {point.predicted_items_sold} itens."
-            ),
-            source=forecast.source,
-            used_fallback=forecast.used_fallback,
-            supporting_metrics={
-                "date": point.date,
-                "predicted_orders": str(point.predicted_orders),
-                "predicted_items_sold": str(point.predicted_items_sold),
-            },
-        )
-
-    return AssistantAnswerResponse(
-        question=question,
-        answer=(
-            "Consigo responder melhor perguntas sobre faturamento recente, prato mais vendido, "
-            "melhor dia da semana e previsoes para amanha."
-        ),
-        source="local_fallback",
-        used_fallback=True,
-        supporting_metrics={"templates": ", ".join(item["question"] for item in PRESET_AI_QUESTIONS)},
-    )
+    return normalized
 
 
-def assistant_response(question, orders, restaurant_id=None, start_date=None, end_date=None):
+def owner_ai_placeholders_response(start_date, end_date, orders, restaurant_id=None):
+    analytics = analytics_history_response(start_date, end_date, orders)
+    request_url = f"{ai_service_base_url()}{AI_PLACEHOLDER_PATH}"
     payload = {
-        "question": question,
         "owner_id": current_user.id,
         "restaurant_id": restaurant_id,
-        "start_date": start_date.isoformat() if start_date else None,
-        "end_date": end_date.isoformat() if end_date else None,
-        "templates": PRESET_AI_QUESTIONS,
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "history": build_orders_history(orders, restaurant_id=restaurant_id),
+        "summary": summary_snapshot(analytics.summary),
+        "placeholder": True,
+        "placeholder_note": AI_PLACEHOLDER_NOTE,
     }
-    external_response = ai_service_request("/chat", payload)
-    if external_response and external_response.get("answer"):
-        supporting_metrics = {
-            str(key): str(value)
-            for key, value in external_response.get("supporting_metrics", {}).items()
-        }
-        return AssistantAnswerResponse(
-            question=question,
-            answer=external_response["answer"],
-            source="external",
-            used_fallback=False,
-            supporting_metrics=supporting_metrics,
+    external_response = ai_service_request(AI_PLACEHOLDER_PATH, payload)
+    if external_response:
+        return AIPlaceholdersResponse(
+            source="external_placeholder",
+            source_url=request_url,
+            generated_at=datetime.now(APP_TIMEZONE),
+            placeholder_note=str(external_response.get("placeholder_note", AI_PLACEHOLDER_NOTE)),
+            metrics=normalize_placeholder_metrics(external_response.get("metrics", [])),
+            insights=normalize_placeholder_insights(external_response.get("insights", [])),
         )
 
-    return assistant_fallback_answer(
-        question,
-        orders,
-        restaurant_id=restaurant_id,
-        start_date=start_date,
-        end_date=end_date,
+    return AIPlaceholdersResponse(
+        source="local_placeholder_fallback",
+        source_url=request_url,
+        generated_at=datetime.now(APP_TIMEZONE),
+        placeholder_note=AI_PLACEHOLDER_NOTE,
+        metrics=build_placeholder_metrics(analytics.summary),
+        insights=build_placeholder_insights(analytics.summary),
     )

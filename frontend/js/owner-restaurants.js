@@ -10,18 +10,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formTitle = document.getElementById('restaurantFormTitle')
   const saveButton = document.getElementById('restaurantSaveButton')
   const cancelButton = document.getElementById('restaurantCancelButton')
-  const cards = document.getElementById('restaurantCards')
+  const detailsCard = document.getElementById('restaurantDetailsCard')
+  const deleteButton = document.getElementById('restaurantDeleteButton')
 
-  let restaurants = []
+  let restaurant = null
   let menus = []
-  let editingId = null
 
   logoutButton?.addEventListener('click', () => {
     App.logout()
     location.href = 'login.html'
   })
 
-  cancelButton?.addEventListener('click', resetForm)
+  cancelButton?.addEventListener('click', fillForm)
+  deleteButton?.addEventListener('click', removeRestaurant)
 
   hide(content)
   hide(guestState)
@@ -60,94 +61,69 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadData() {
-    setAlert('Carregando lojas...', 'success')
-    const [restaurantsResponse, menusResponse] = await Promise.all([
-      api.get('/owner/restaurants'),
+    setAlert('Carregando restaurante...', 'success')
+    const [restaurantResponse, menusResponse] = await Promise.all([
+      api.get('/owner/restaurant').catch((error) => {
+        if (error?.response?.status === 404) {
+          return { data: null }
+        }
+        throw error
+      }),
       api.get('/owner/menus')
     ])
 
-    restaurants = restaurantsResponse.data || []
+    restaurant = restaurantResponse.data || null
     menus = menusResponse.data || []
-    renderCards()
-    setAlert('Lojas conectadas ao backend.', 'success')
+    fillForm()
+    renderDetails()
+    setAlert('Restaurante conectado ao backend.', 'success')
   }
 
-  function renderCards() {
-    if (!cards) {
+  function renderDetails() {
+    if (!detailsCard) {
       return
     }
 
-    if (!restaurants.length) {
-      cards.innerHTML = `
-        <article class="restaurant-card">
-          <div class="restaurant-avatar">+</div>
-          <div>
-            <h3>Nenhuma loja cadastrada</h3>
-            <p>Crie sua primeira unidade para vincular cardapio, pedidos e faturamento.</p>
-            <small>Use o formulario acima</small>
-          </div>
-        </article>
+    if (!restaurant) {
+      detailsCard.innerHTML = `
+        <div>
+          <h3>Nenhum restaurante cadastrado</h3>
+          <p>Cadastre o restaurante do owner. A partir dessa regra, cada owner pode ter apenas uma unidade.</p>
+          <small>${menus.length} item(ns) de cardapio sem restaurante nao sao permitidos.</small>
+        </div>
       `
+      deleteButton.hidden = true
       return
     }
 
-    cards.innerHTML = restaurants.map((restaurant) => `
-      <article class="restaurant-card">
-        <div class="restaurant-avatar">${App.initials(restaurant.name)}</div>
+    detailsCard.innerHTML = `
         <div>
           <h3>${App.escapeHtml(restaurant.name)}</h3>
           <p>${App.escapeHtml(restaurant.description)}</p>
-          <small>${countItems(restaurant.id)} item(ns) vinculados</small>
+          <small>${countItems()} item(ns) vinculados</small>
         </div>
-        <div class="row-actions">
-          <button class="button button-ghost small-button" type="button" data-edit="${restaurant.id}">Editar</button>
-          <button class="button button-ghost small-button danger-text" type="button" data-delete="${restaurant.id}">Excluir</button>
-        </div>
-      </article>
-    `).join('')
-
-    cards.querySelectorAll('[data-edit]').forEach((button) => {
-      button.addEventListener('click', () => startEdit(Number(button.dataset.edit)))
-    })
-
-    cards.querySelectorAll('[data-delete]').forEach((button) => {
-      button.addEventListener('click', () => removeRestaurant(Number(button.dataset.delete)))
-    })
+    `
+    deleteButton.hidden = false
   }
 
-  function countItems(restaurantId) {
-    return menus.filter((item) => item.restaurant_id === restaurantId).length
+  function countItems() {
+    return restaurant ? menus.filter((item) => item.restaurant_id === restaurant.id).length : 0
   }
 
-  function startEdit(id) {
-    const restaurant = restaurants.find((entry) => entry.id === id)
-    if (!restaurant) {
-      return
-    }
-
-    editingId = id
-    formTitle.textContent = 'Editar loja'
-    nameInput.value = restaurant.name
-    descriptionInput.value = restaurant.description
-    saveButton.textContent = 'Salvar loja'
-  }
-
-  async function removeRestaurant(id) {
-    if (!confirm('Excluir esta loja?')) {
+  async function removeRestaurant() {
+    if (!restaurant || !confirm('Excluir o restaurante do owner?')) {
       return
     }
 
     try {
-      await api.delete(`/owner/restaurants/${id}`)
-      restaurants = restaurants.filter((restaurant) => restaurant.id !== id)
-      menus = menus.filter((item) => item.restaurant_id !== id)
-      renderCards()
-      if (editingId === id) {
-        resetForm()
-      }
-      setAlert('Loja removida.', 'success')
+      await api.delete('/owner/restaurant')
+      restaurant = null
+      menus = []
+      fillForm()
+      renderDetails()
+      setAlert('Restaurante removido.', 'success')
     } catch (error) {
-      setAlert(error?.response?.data?.msg || 'Nao foi possivel excluir a loja.', 'error')
+      setAlert(error?.response?.data?.msg || 'Nao foi possivel excluir o restaurante.', 'error')
     }
   }
 
@@ -160,28 +136,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      if (editingId) {
-        const response = await api.put(`/owner/restaurants/${editingId}`, payload)
-        restaurants = restaurants.map((restaurant) => restaurant.id === editingId ? response.data : restaurant)
-        setAlert('Loja atualizada.', 'success')
+      if (restaurant) {
+        const response = await api.put('/owner/restaurant', payload)
+        restaurant = response.data
+        setAlert('Restaurante atualizado.', 'success')
       } else {
-        const response = await api.post('/owner/restaurants', payload)
-        restaurants = [response.data, ...restaurants]
-        setAlert('Loja criada.', 'success')
+        const response = await api.post('/owner/restaurant', payload)
+        restaurant = response.data
+        setAlert('Restaurante criado.', 'success')
       }
 
-      resetForm()
-      renderCards()
+      fillForm()
+      renderDetails()
     } catch (error) {
-      setAlert(error?.response?.data?.msg || 'Nao foi possivel salvar a loja.', 'error')
+      setAlert(error?.response?.data?.msg || 'Nao foi possivel salvar o restaurante.', 'error')
     }
   }
 
-  function resetForm() {
-    editingId = null
-    form?.reset()
-    formTitle.textContent = 'Nova loja'
-    saveButton.textContent = 'Criar loja'
+  function fillForm() {
+    if (!restaurant) {
+      form?.reset()
+      formTitle.textContent = 'Cadastrar restaurante'
+      saveButton.textContent = 'Criar restaurante'
+      return
+    }
+
+    formTitle.textContent = 'Editar restaurante'
+    saveButton.textContent = 'Salvar restaurante'
+    nameInput.value = restaurant.name
+    descriptionInput.value = restaurant.description
   }
 
   function setAlert(message, type) {

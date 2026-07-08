@@ -136,12 +136,17 @@ createApp({
       try {
         const [userResponse, restaurantsResponse, menusResponse] = await Promise.all([
           api.get('/users/me'),
-          api.get('/owner/restaurants'),
+          api.get('/owner/restaurant').catch((error) => {
+            if (error?.response?.status === 404) {
+              return { data: null }
+            }
+            throw error
+          }),
           api.get('/owner/menus')
         ])
 
         user.value = userResponse.data
-        restaurants.value = restaurantsResponse.data
+        restaurants.value = restaurantsResponse.data ? [restaurantsResponse.data] : []
         menuItems.value = menusResponse.data
       } catch (error) {
         handleRequestError(error, 'Nao foi possivel carregar o painel.')
@@ -162,14 +167,12 @@ createApp({
 
       try {
         if (restaurantForm.value.id) {
-          const response = await api.put(`/owner/restaurants/${restaurantForm.value.id}`, payload)
-          restaurants.value = restaurants.value.map((restaurant) =>
-            restaurant.id === response.data.id ? response.data : restaurant
-          )
+          const response = await api.put('/owner/restaurant', payload)
+          restaurants.value = [response.data]
           showSuccess('Loja atualizada.')
         } else {
-          const response = await api.post('/owner/restaurants', payload)
-          restaurants.value = [...restaurants.value, response.data]
+          const response = await api.post('/owner/restaurant', payload)
+          restaurants.value = [response.data]
           showSuccess('Loja criada.')
         }
 
@@ -190,9 +193,9 @@ createApp({
       clearMessages()
 
       try {
-        await api.delete(`/owner/restaurants/${id}`)
-        restaurants.value = restaurants.value.filter((restaurant) => restaurant.id !== id)
-        menuItems.value = menuItems.value.filter((item) => item.restaurant_id !== id)
+        await api.delete('/owner/restaurant')
+        restaurants.value = []
+        menuItems.value = []
         showSuccess('Loja excluida.')
       } catch (error) {
         handleRequestError(error, 'Nao foi possivel excluir a loja.')
@@ -207,8 +210,7 @@ createApp({
         title: menuForm.value.title,
         name: menuForm.value.name,
         price: Number(menuForm.value.price),
-        description: menuForm.value.description,
-        restaurant_id: normalizeRestaurantId(menuForm.value.restaurant_id)
+        description: menuForm.value.description
       }
 
       try {

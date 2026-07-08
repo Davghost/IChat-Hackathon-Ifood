@@ -34,9 +34,9 @@
       <section class="workspace">
         <header class="topbar">
           <div>
-            <p class="page-kicker">Gestao de lojas</p>
-            <h1 class="page-title">Unidades do owner</h1>
-            <p class="page-subtitle">CRUD conectado ao endpoint `/api/owner/restaurants` com contagem de itens vinculados.</p>
+            <p class="page-kicker">Restaurante do owner</p>
+            <h1 class="page-title">Configuracao da unidade</h1>
+            <p class="page-subtitle">Cada owner agora pode ter apenas um restaurante. Esta tela cria ou edita essa unica unidade.</p>
           </div>
         </header>
 
@@ -49,7 +49,7 @@
             <div class="panel-header">
               <div>
                 <p class="eyebrow">Formulario</p>
-                <h2 id="restaurantFormTitle">Nova loja</h2>
+                <h2 id="restaurantFormTitle">Cadastrar restaurante</h2>
               </div>
             </div>
 
@@ -66,11 +66,23 @@
 
             <div class="form-actions">
               <button id="restaurantCancelButton" class="button button-ghost" type="button">Limpar</button>
-              <button id="restaurantSaveButton" class="button button-primary" type="submit">Criar loja</button>
+              <button id="restaurantSaveButton" class="button button-primary" type="submit">Criar restaurante</button>
             </div>
           </form>
 
-          <section id="restaurantCards" class="restaurant-grid"></section>
+          <section class="restaurant-grid single-restaurant-grid">
+            <article class="restaurant-card">
+              <div class="restaurant-avatar">IF</div>
+              <div id="restaurantDetailsCard">
+                <h3>Carregando restaurante</h3>
+                <p>Buscando a unidade vinculada ao owner.</p>
+                <small>Aguardando resposta do backend</small>
+              </div>
+              <div class="row-actions">
+                <button id="restaurantDeleteButton" class="button button-ghost small-button danger-text" type="button">Excluir</button>
+              </div>
+            </article>
+          </section>
         </section>
       </section>
     </main>

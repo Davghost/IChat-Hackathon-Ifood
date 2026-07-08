@@ -19,10 +19,10 @@ Endpoints integrados:
 
 - `POST /auth/login`
 - `GET /users/me`
-- `GET /owner/restaurants`
-- `POST /owner/restaurants`
-- `PUT /owner/restaurants/:id`
-- `DELETE /owner/restaurants/:id`
+- `GET /owner/restaurant`
+- `POST /owner/restaurant`
+- `PUT /owner/restaurant`
+- `DELETE /owner/restaurant`
 - `GET /owner/menus`
 - `POST /owner/menus`
 - `PUT /owner/menus/:id`
@@ -30,4 +30,4 @@ Endpoints integrados:
 
 ## Observacao
 
-O backend atual nao possui models/controllers de pedidos ou faturamento. Por isso, as secoes de pedidos do dia e faturamento usam uma projecao local baseada nos itens do cardapio carregados da API.
+O fluxo do owner foi simplificado para um restaurante unico por usuario owner. O cardapio do owner sempre fica vinculado a essa unica unidade.

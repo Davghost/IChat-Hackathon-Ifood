@@ -4,13 +4,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const alertBox = document.getElementById('pageAlert')
   const userBadge = document.getElementById('sidebarUserBadge')
   const logoutButton = document.getElementById('logoutButton')
-  const restaurantFilter = document.getElementById('restaurantFilter')
   const statusFilter = document.getElementById('statusFilter')
   const applyFiltersButton = document.getElementById('applyFiltersButton')
   const metrics = document.getElementById('ordersStatusMetrics')
   const ordersBoard = document.getElementById('ordersBoard')
-
-  let restaurants = []
 
   logoutButton?.addEventListener('click', () => {
     App.logout()
@@ -41,10 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     show(content)
     applyFiltersButton?.addEventListener('click', loadOrders)
-
-    const restaurantsResponse = await api.get('/owner/restaurants')
-    restaurants = restaurantsResponse.data || []
-    renderRestaurantFilter()
     await loadOrders()
   } catch (error) {
     if (error?.response?.status === 401 || error?.response?.status === 422) {
@@ -66,10 +59,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       days: '30'
     })
 
-    if (restaurantFilter.value) {
-      params.set('restaurant_id', restaurantFilter.value)
-    }
-
     if (statusFilter.value) {
       params.set('status', statusFilter.value)
     }
@@ -83,15 +72,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       setAlert(error?.response?.data?.msg || 'Nao foi possivel filtrar os pedidos.', 'error')
     }
-  }
-
-  function renderRestaurantFilter() {
-    restaurantFilter.innerHTML = `
-      <option value="">Todas as lojas</option>
-      ${restaurants.map((restaurant) => `
-        <option value="${restaurant.id}">${App.escapeHtml(restaurant.name)}</option>
-      `).join('')}
-    `
   }
 
   function renderStatusCounts(statusCounts) {

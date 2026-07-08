@@ -8,23 +8,19 @@ from utils.response_schema import GenericResponse
 from .common import (
     AnalyticsHistoryQuery,
     AnalyticsHistoryResponse,
-    AssistantAnswerResponse,
-    AssistantChatMessage,
-    AssistantTemplateResponse,
-    AssistantTemplatesResponse,
+    AIPlaceholdersResponse,
     DEFAULT_ANALYTICS_DAYS,
     DashboardQuery,
     DashboardResponse,
     ForecastQuery,
     ForecastResponse,
-    PRESET_AI_QUESTIONS,
     analytics_history_response,
-    assistant_response,
     dashboard_response,
     filter_orders,
     find_owner_restaurant,
     forecast_response,
     load_owner_orders,
+    owner_ai_placeholders_response,
     owner_controller,
     owner_required,
     resolve_period,
@@ -88,46 +84,47 @@ def get_analytics_history():
     return response.model_dump(mode="json"), 200
 
 
-@owner_controller.get("/assistant/templates")
-@api.validate(resp=Response(HTTP_200=AssistantTemplatesResponse), tags=["owner"])
-@jwt_required()
-def get_assistant_templates():
-    auth_error = owner_required()
-    if auth_error:
-        return auth_error
-
-    response = AssistantTemplatesResponse(
-        questions=[AssistantTemplateResponse(**item) for item in PRESET_AI_QUESTIONS]
-    )
-    return response.model_dump(mode="json"), 200
-
-
-@owner_controller.post("/assistant/chat")
+@owner_controller.get("/ai/placeholders")
 @api.validate(
-    json=AssistantChatMessage,
+    query=AnalyticsHistoryQuery,
     resp=Response(
-        HTTP_200=AssistantAnswerResponse,
+        HTTP_200=AIPlaceholdersResponse,
         HTTP_400=SpectreeValidationError,
         HTTP_404=GenericResponse,
     ),
     tags=["owner"],
 )
 @jwt_required()
-def assistant_chat():
+def get_ai_placeholders():
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
-    data = request.context.json
-    if data.restaurant_id is not None and not find_owner_restaurant(data.restaurant_id):
+    query = request.context.query
+    if query.restaurant_id is not None and not find_owner_restaurant(query.restaurant_id):
         return {"msg": "Restaurant not found"}, 404
 
-    response = assistant_response(
-        data.question,
+    status_error = validate_status(query.status)
+    if status_error:
+        return status_error
+
+    start_date, end_date, period_error = resolve_period(query, DEFAULT_ANALYTICS_DAYS)
+    if period_error:
+        return period_error
+
+    orders = filter_orders(
         load_owner_orders(),
-        restaurant_id=data.restaurant_id,
-        start_date=data.start_date,
-        end_date=data.end_date,
+        start_date,
+        end_date,
+        restaurant_id=query.restaurant_id,
+        menu_item_id=query.menu_item_id,
+        status=query.status,
+    )
+    response = owner_ai_placeholders_response(
+        start_date,
+        end_date,
+        orders,
+        restaurant_id=query.restaurant_id,
     )
     return response.model_dump(mode="json"), 200
 

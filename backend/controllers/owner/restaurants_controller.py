@@ -8,14 +8,14 @@ from utils.response_schema import GenericResponse
 from .common import (
     RestaurantMessage,
     RestaurantResponse,
-    find_owner_restaurant,
+    get_owner_restaurant,
     owner_controller,
     owner_required,
     restaurant_response,
 )
 
 
-@owner_controller.post("/restaurants")
+@owner_controller.post("/restaurant")
 @api.validate(
     json=RestaurantMessage,
     resp=Response(HTTP_201=RestaurantResponse, HTTP_400=GenericResponse),
@@ -26,6 +26,9 @@ def create_restaurant():
     auth_error = owner_required()
     if auth_error:
         return auth_error
+
+    if get_owner_restaurant():
+        return {"msg": "Owner already has a restaurant"}, 400
 
     data = request.context.json
     restaurant = Restaurant(
@@ -39,31 +42,34 @@ def create_restaurant():
     return restaurant_response(restaurant), 201
 
 
-@owner_controller.get("/restaurants")
-@api.validate(resp=Response(HTTP_200=list[RestaurantResponse]), tags=["owner"])
+@owner_controller.get("/restaurant")
+@api.validate(resp=Response(HTTP_200=RestaurantResponse, HTTP_404=GenericResponse), tags=["owner"])
 @jwt_required()
-def list_restaurants():
+def get_restaurant():
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
-    restaurants = Restaurant.query.filter_by(owner_id=current_user.id).all()
-    return [restaurant_response(restaurant) for restaurant in restaurants], 200
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        return {"msg": "Restaurant not found"}, 404
+
+    return restaurant_response(restaurant), 200
 
 
-@owner_controller.put("/restaurants/<int:restaurant_id>")
+@owner_controller.put("/restaurant")
 @api.validate(
     json=RestaurantMessage,
     resp=Response(HTTP_200=RestaurantResponse, HTTP_404=GenericResponse),
     tags=["owner"],
 )
 @jwt_required()
-def update_restaurant(restaurant_id):
+def update_restaurant():
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
-    restaurant = find_owner_restaurant(restaurant_id)
+    restaurant = get_owner_restaurant()
     if not restaurant:
         return {"msg": "Restaurant not found"}, 404
 
@@ -75,15 +81,15 @@ def update_restaurant(restaurant_id):
     return restaurant_response(restaurant), 200
 
 
-@owner_controller.delete("/restaurants/<int:restaurant_id>")
+@owner_controller.delete("/restaurant")
 @api.validate(resp=Response(HTTP_200=GenericResponse, HTTP_404=GenericResponse), tags=["owner"])
 @jwt_required()
-def delete_restaurant(restaurant_id):
+def delete_restaurant():
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
-    restaurant = find_owner_restaurant(restaurant_id)
+    restaurant = get_owner_restaurant()
     if not restaurant:
         return {"msg": "Restaurant not found"}, 404
 

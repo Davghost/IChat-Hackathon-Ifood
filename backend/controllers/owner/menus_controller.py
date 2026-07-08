@@ -9,7 +9,7 @@ from utils.response_schema import GenericResponse
 from .common import (
     MenuItemMessage,
     MenuItemResponse,
-    find_owner_restaurant,
+    get_owner_restaurant,
     menu_item_response,
     owner_controller,
     owner_required,
@@ -33,7 +33,7 @@ def create_menu_item():
         return auth_error
 
     data = request.context.json
-    restaurant = find_owner_restaurant(data.restaurant_id)
+    restaurant = get_owner_restaurant()
     if not restaurant:
         return {"msg": "Restaurant not found"}, 404
 
@@ -84,7 +84,7 @@ def update_menu_item(menu_id):
         return {"msg": "Menu item not found"}, 404
 
     data = request.context.json
-    restaurant = find_owner_restaurant(data.restaurant_id)
+    restaurant = get_owner_restaurant()
     if not restaurant:
         return {"msg": "Restaurant not found"}, 404
 

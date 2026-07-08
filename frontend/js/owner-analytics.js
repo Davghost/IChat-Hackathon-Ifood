@@ -8,10 +8,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const revenueBars = document.getElementById('revenueBars')
   const financeList = document.getElementById('financeList')
   const forecastList = document.getElementById('forecastList')
-  const assistantTemplates = document.getElementById('assistantTemplates')
-  const assistantQuestion = document.getElementById('assistantQuestion')
-  const assistantAnswer = document.getElementById('assistantAnswer')
-  const askAssistantButton = document.getElementById('askAssistantButton')
+  const aiMetrics = document.getElementById('aiMetrics')
+  const aiInsights = document.getElementById('aiInsights')
 
   logoutButton?.addEventListener('click', () => {
     App.logout()
@@ -41,7 +39,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     show(content)
-    askAssistantButton?.addEventListener('click', submitQuestion)
     await loadAnalytics()
   } catch (error) {
     if (error?.response?.status === 401 || error?.response?.status === 422) {
@@ -57,17 +54,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadAnalytics() {
     setAlert('Carregando analytics...', 'success')
 
-    const [historyResponse, forecastResponse, templatesResponse] = await Promise.all([
+    const [historyResponse, forecastResponse, aiPlaceholderResponse] = await Promise.all([
       api.get('/owner/analytics/history?days=30'),
       api.get('/owner/forecasts?days=7'),
-      api.get('/owner/assistant/templates')
+      api.get('/owner/ai/placeholders?days=30')
     ])
 
     const history = historyResponse.data || {}
     const summary = history.summary || {}
     const charts = history.charts || []
     const forecasts = forecastResponse.data?.forecasts || []
-    const templates = templatesResponse.data?.questions || []
+    const placeholderPayload = aiPlaceholderResponse.data || {}
+    const placeholderMetrics = placeholderPayload.metrics || []
+    const placeholderInsights = placeholderPayload.insights || []
+    const placeholderNote = placeholderPayload.placeholder_note || 'PLACEHOLDER'
 
     revenueValue.textContent = App.formatCurrency(summary.total_revenue)
     revenueBars.innerHTML = renderRevenueBars(charts)
@@ -89,41 +89,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('')
       : '<p class="empty-cart">Sem previsao disponivel.</p>'
 
-    assistantTemplates.innerHTML = templates.map((item) => `
-      <button class="template-chip" type="button" data-question="${App.escapeHtml(item.question)}">
-        ${App.escapeHtml(item.question)}
-      </button>
-    `).join('')
+    aiMetrics.innerHTML = placeholderMetrics.length
+      ? placeholderMetrics.map((item) => `
+          <p>
+            <span>${App.escapeHtml(item.label || 'PLACEHOLDER')}</span>
+            <strong>${App.escapeHtml(item.value || '')}</strong>
+          </p>
+        `).join('')
+      : '<p class="empty-cart">Sem placeholders de IA disponiveis.</p>'
 
-    assistantTemplates.querySelectorAll('[data-question]').forEach((button) => {
-      button.addEventListener('click', () => {
-        assistantQuestion.value = button.dataset.question
-      })
-    })
+    aiInsights.innerHTML = placeholderInsights.length
+      ? `
+          <strong>${App.escapeHtml(placeholderNote)}</strong>
+          ${placeholderInsights.map((item) => `
+            <p><strong>${App.escapeHtml(item.title || 'PLACEHOLDER')}</strong></p>
+            <p>${App.escapeHtml(item.description || '')}</p>
+          `).join('')}
+        `
+      : `
+          <strong>${App.escapeHtml(placeholderNote)}</strong>
+          <p>Os insights de IA ainda nao foram implementados.</p>
+        `
 
-    setAlert('Faturamento, previsoes e perguntas prontas carregados.', 'success')
-  }
-
-  async function submitQuestion() {
-    const question = assistantQuestion.value.trim()
-    if (!question) {
-      setAlert('Digite uma pergunta para o assistente.', 'error')
-      return
-    }
-
-    setAlert('Consultando assistente...', 'success')
-
-    try {
-      const response = await api.post('/owner/assistant/chat', { question })
-      const answer = response.data || {}
-      assistantAnswer.innerHTML = `
-        <strong>${App.escapeHtml(answer.answer || '')}</strong>
-        <small>Fonte: ${App.escapeHtml(answer.source || 'local')}</small>
-      `
-      setAlert('Resposta recebida.', 'success')
-    } catch (error) {
-      setAlert(error?.response?.data?.msg || 'Nao foi possivel consultar o assistente.', 'error')
-    }
+    setAlert('Faturamento, previsoes e placeholders de IA carregados.', 'success')
   }
 
   function setAlert(message, type) {

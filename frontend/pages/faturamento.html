@@ -36,7 +36,7 @@
           <div>
             <p class="page-kicker">Analytics owner</p>
             <h1 class="page-title">Financeiro e previsoes</h1>
-            <p class="page-subtitle">Painel alimentado por analytics, forecasts e assistente do backend owner.</p>
+            <p class="page-subtitle">Painel alimentado por analytics locais e placeholders da futura IA em localhost:8000.</p>
           </div>
         </header>
 
@@ -77,21 +77,14 @@
             <section class="panel">
               <div class="panel-header">
                 <div>
-                  <p class="eyebrow">Assistente</p>
-                  <h2>Perguntas rapidas</h2>
+                  <p class="eyebrow">IA Placeholder</p>
+                  <h2>Insights previstos</h2>
                 </div>
               </div>
-              <div id="assistantTemplates" class="template-list"></div>
-              <div class="field field-wide" style="margin-top: 16px;">
-                <span>Pergunta</span>
-                <textarea id="assistantQuestion" rows="3" placeholder="Ex.: Quanto devo vender amanha?"></textarea>
-              </div>
-              <div class="form-actions">
-                <button id="askAssistantButton" class="button button-primary" type="button">Perguntar</button>
-              </div>
-              <div id="assistantAnswer" class="placeholder-panel">
-                <strong>Resposta</strong>
-                <p>Selecione uma pergunta pronta ou envie uma consulta livre.</p>
+              <div id="aiMetrics" class="finance-list"></div>
+              <div id="aiInsights" class="placeholder-panel" style="margin-top: 16px;">
+                <strong>PLACEHOLDER</strong>
+                <p>Os insights da IA serao exibidos aqui quando a integracao em http://localhost:8000 estiver pronta.</p>
               </div>
             </section>
           </div>

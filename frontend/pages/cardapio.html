@@ -36,10 +36,10 @@
           <div>
             <p class="page-kicker">Gestao de menu</p>
             <h1 class="page-title">Cadastro de itens</h1>
-            <p class="page-subtitle">CRUD conectado aos endpoints `/api/owner/menus` e `/api/owner/restaurants`.</p>
+            <p class="page-subtitle">CRUD conectado a `/api/owner/menus`, sempre vinculado ao unico restaurante do owner.</p>
           </div>
           <div class="topbar-actions">
-            <a class="button button-ghost" href="lojas.html">Gerenciar lojas</a>
+            <a class="button button-ghost" href="lojas.html">Editar restaurante</a>
           </div>
         </header>
 
@@ -70,8 +70,8 @@
                 <input id="menuPrice" type="number" min="0" step="0.01" required />
               </label>
               <label class="field">
-                <span>Loja</span>
-                <select id="menuRestaurant" required></select>
+                <span>Restaurante</span>
+                <div id="restaurantBadge" class="input-badge">Carregando restaurante</div>
               </label>
               <label class="field field-wide">
                 <span>Descricao</span>

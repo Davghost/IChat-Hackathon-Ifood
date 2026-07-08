@@ -9,13 +9,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const nameInput = document.getElementById('menuName')
   const priceInput = document.getElementById('menuPrice')
   const descriptionInput = document.getElementById('menuDescription')
-  const restaurantSelect = document.getElementById('menuRestaurant')
+  const restaurantBadge = document.getElementById('restaurantBadge')
   const formTitle = document.getElementById('menuFormTitle')
   const saveButton = document.getElementById('menuSaveButton')
   const cancelButton = document.getElementById('menuCancelButton')
   const tableBody = document.getElementById('menuTableBody')
 
-  let restaurants = []
+  let restaurant = null
   let items = []
   let editingId = null
 
@@ -58,20 +58,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadData() {
-    setAlert('Carregando restaurantes e itens...', 'success')
-    const [restaurantsResponse, itemsResponse] = await Promise.all([
-      api.get('/owner/restaurants'),
+    setAlert('Carregando restaurante e itens...', 'success')
+    const [restaurantResponse, itemsResponse] = await Promise.all([
+      api.get('/owner/restaurant').catch((error) => {
+        if (error?.response?.status === 404) {
+          return { data: null }
+        }
+        throw error
+      }),
       api.get('/owner/menus')
     ])
 
-    restaurants = restaurantsResponse.data || []
+    restaurant = restaurantResponse.data || null
     items = itemsResponse.data || []
 
-    renderRestaurantOptions()
+    renderRestaurantBadge()
     renderItems()
 
-    if (!restaurants.length) {
-      setAlert('Crie uma loja primeiro. O backend exige um restaurante vinculado para cada item.', 'error')
+    if (!restaurant) {
+      setAlert('Cadastre o restaurante primeiro. Cada owner agora pode ter apenas uma unidade.', 'error')
       saveButton.disabled = true
     } else {
       saveButton.disabled = false
@@ -79,16 +84,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function renderRestaurantOptions() {
-    if (!restaurantSelect) {
+  function renderRestaurantBadge() {
+    if (!restaurantBadge) {
       return
     }
 
-    restaurantSelect.innerHTML = restaurants.length
-      ? restaurants.map((restaurant) => `
-          <option value="${restaurant.id}">${App.escapeHtml(restaurant.name)}</option>
-        `).join('')
-      : '<option value="">Cadastre uma loja primeiro</option>'
+    restaurantBadge.textContent = restaurant ? restaurant.name : 'Nenhum restaurante cadastrado'
   }
 
   function renderItems() {
@@ -147,7 +148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     nameInput.value = item.name
     priceInput.value = item.price
     descriptionInput.value = item.description
-    restaurantSelect.value = String(item.restaurant_id)
     saveButton.textContent = 'Salvar item'
   }
 
@@ -172,8 +172,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function onSubmit(event) {
     event.preventDefault()
 
-    if (!restaurants.length) {
-      setAlert('Cadastre uma loja antes de salvar itens.', 'error')
+    if (!restaurant) {
+      setAlert('Cadastre o restaurante antes de salvar itens.', 'error')
       return
     }
 
@@ -181,8 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       title: titleInput.value.trim(),
       name: nameInput.value.trim(),
       price: Number(priceInput.value),
-      description: descriptionInput.value.trim(),
-      restaurant_id: Number(restaurantSelect.value)
+      description: descriptionInput.value.trim()
     }
 
     try {
@@ -208,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     form?.reset()
     formTitle.textContent = 'Novo item'
     saveButton.textContent = 'Criar item'
-    renderRestaurantOptions()
+    renderRestaurantBadge()
   }
 
   function setAlert(message, type) {

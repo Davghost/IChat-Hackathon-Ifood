@@ -11,7 +11,13 @@ class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    owner_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False,
+        index=True,
+        unique=True,
+    )
 
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
@@ -20,7 +26,7 @@ class Restaurant(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    owner = db.relationship("User", back_populates="restaurants")
+    owner = db.relationship("User", back_populates="restaurant")
     menu_items = db.relationship(
         "MenuItem",
         back_populates="restaurant",
