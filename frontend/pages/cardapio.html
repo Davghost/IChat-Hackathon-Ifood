@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cardápio</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="homeowner.html" aria-label="iFood Manager">
+          <span class="brand-mark">iF</span>
+          <span>
+            <strong>iFood</strong>
+            <small>Manager</small>
+          </span>
+        </a>
+
+        <nav class="nav-list">
+          <a class="nav-item" href="homeowner.html">Resumo</a>
+          <a class="nav-item" href="pedidos.html">Pedidos</a>
+          <a class="nav-item active" href="cardapio.html">Cardápio</a>
+          <a class="nav-item" href="lojas.html">Lojas</a>
+          <a class="nav-item" href="faturamento.html">Faturamento</a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p>Gerencie o cardápio</p>
+          <a class="button button-ghost" href="homeclient.html">Cliente</a>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="page-kicker">Cardápio</p>
+            <h1 class="page-title">Itens do restaurante</h1>
+            <p class="page-subtitle">Atualize os pratos, preços e disponibilidade em poucos cliques.</p>
+          </div>
+          <div class="topbar-actions">
+            <a class="button button-primary" href="homeowner.html">Voltar ao resumo</a>
+          </div>
+        </header>
+
+        <section class="view-stack">
+          <form class="editor-panel">
+            <div class="form-grid">
+              <div class="field">
+                <span>Nome do item</span>
+                <input type="text" value="Classic Burger" />
+              </div>
+              <div class="field">
+                <span>Categoria</span>
+                <select>
+                  <option>Lanche</option>
+                  <option>Pizza</option>
+                  <option>Salada</option>
+                  <option>Acompanhamento</option>
+                </select>
+              </div>
+              <div class="field">
+                <span>Preço</span>
+                <input type="text" value="R$ 24,90" />
+              </div>
+              <div class="field">
+                <span>Disponibilidade</span>
+                <select>
+                  <option>Disponível</option>
+                  <option>Indisponível</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="button button-ghost" type="button">Cancelar</button>
+              <button class="button button-primary" type="submit">Salvar item</button>
+            </div>
+          </form>
+
+          <div class="table-panel">
+            <div class="table-row table-head">
+              <span>Item</span>
+              <span>Categoria</span>
+              <span>Preço</span>
+              <span>Status</span>
+            </div>
+            <div class="table-row">
+              <div>
+                <strong>Classic Burger</strong>
+                <small>Pão brioche e queijo cheddar</small>
+              </div>
+              <span>Lanche</span>
+              <span>R$ 24,90</span>
+              <span>Disponível</span>
+            </div>
+            <div class="table-row">
+              <div>
+                <strong>Pizza Pepperoni</strong>
+                <small>Borda crocante e molho italiano</small>
+              </div>
+              <span>Pizza</span>
+              <span>R$ 36,50</span>
+              <span>Disponível</span>
+            </div>
+            <div class="table-row">
+              <div>
+                <strong>Batata Frita</strong>
+                <small>Com sal e cheddar cremoso</small>
+              </div>
+              <span>Acompanhamento</span>
+              <span>R$ 12,00</span>
+              <span>Disponível</span>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

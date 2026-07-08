@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iFood Cliente</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="homeclient.html" aria-label="iFood Cliente">
+          <span class="brand-mark">iF</span>
+          <span>
+            <strong>iFood</strong>
+            <small>Cliente</small>
+          </span>
+        </a>
+
+        <nav class="nav-list">
+          <a class="nav-item active" href="homeclient.html">
+            <span>Loja</span>
+          </a>
+          <a class="nav-item" href="homeowner.html">
+            <span>Painel do dono</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p>Faça seu pedido</p>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Pedido rápido</p>
+            <h1>Restaurante do bairro</h1>
+          </div>
+          <div id="clientTopbarActions" class="topbar-actions">
+            <a class="button button-ghost" href="homeowner.html">Abrir painel do dono</a>
+          </div>
+        </header>
+
+        <section id="clientGuestState" class="guest-state" hidden>
+          <h2>Entre para fazer seu pedido</h2>
+          <p>Faça login para ver o cardápio e concluir sua compra com segurança.</p>
+          <a class="button button-primary" href="login.html">Ir para login</a>
+        </section>
+
+        <section id="clientContent" class="view-stack" style="margin-top: 20px;">
+          <section class="hero-client">
+          <p class="eyebrow">Hoje na sua região</p>
+          <h2>Pratos deliciosos com entrega em poucos minutos.</h2>
+          <p>Escolha os itens do cardápio, adicione ao carrinho e finalize seu pedido em poucos passos.</p>
+        </section>
+
+          <div class="content-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Cardápio</p>
+                  <h2>Itens disponíveis</h2>
+                </div>
+              </div>
+
+              <div id="menuGrid" class="menu-grid"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Carrinho</p>
+                  <h2>Seu pedido</h2>
+                </div>
+              </div>
+
+              <div id="clientStatusMessage" class="alert alert-success">Carregando cardápio...</div>
+              <div id="cartItems">
+                <p class="empty-cart">Seu carrinho está vazio.</p>
+              </div>
+
+              <div class="cart-total">
+                <span>Total:</span>
+                <strong id="cartTotal">R$ 0,00</strong>
+              </div>
+
+              <div class="form-actions cart-actions">
+                <button id="finishOrderButton" class="button button-primary" type="button">Finalizar pedido</button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/client-store.js"></script>
+  </body>
+</html>

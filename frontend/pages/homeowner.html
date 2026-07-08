@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iFood Owner Dashboard</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="homeowner.html" aria-label="iFood Manager">
+          <span class="brand-mark">iF</span>
+          <span>
+            <strong>iFood</strong>
+            <small>Manager</small>
+          </span>
+        </a>
+
+        <nav class="nav-list" aria-label="Navegação principal">
+          <a class="nav-item active" href="homeowner.html">
+            <span>Resumo</span>
+          </a>
+          <a class="nav-item" href="pedidos.html">
+            <span>Pedidos</span>
+          </a>
+          <a class="nav-item" href="cardapio.html">
+            <span>Cardápio</span>
+          </a>
+          <a class="nav-item" href="lojas.html">
+            <span>Lojas</span>
+          </a>
+          <a class="nav-item" href="faturamento.html">
+            <span>Faturamento</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p>Gestão do restaurante</p>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="page-kicker">Painel do dono</p>
+            <h1 class="page-title">Bem-vindo ao seu restaurante</h1>
+            <p class="page-subtitle">Acompanhe pedidos, cardápio, lojas e faturamento em um único painel.</p>
+          </div>
+          <div id="topbarActions" class="topbar-actions">
+            <a id="primaryAction" class="button button-primary" href="cardapio.html">Gerenciar cardápio</a>
+          </div>
+        </header>
+
+        <section id="ownerGuestState" class="guest-state" hidden>
+          <h2>Entre para acessar o painel</h2>
+          <p>Faça login para visualizar pedidos, cardápio, lojas e faturamento do seu restaurante.</p>
+          <a class="button button-primary" href="login.html">Ir para login</a>
+        </section>
+
+        <section id="ownerContent" class="view-stack">
+          <div class="metric-grid">
+            <article class="metric-card metric-red">
+              <span>Pedidos hoje</span>
+              <strong id="metricOrders">0</strong>
+              <small>Atualizado pelo backend</small>
+            </article>
+            <article class="metric-card metric-green">
+              <span>Receita</span>
+              <strong id="metricRevenue">R$ 0,00</strong>
+              <small>Baseada no cardápio cadastrado</small>
+            </article>
+            <article class="metric-card metric-orange">
+              <span>Tempo médio</span>
+              <strong id="metricTime">0 min</strong>
+              <small>Definido pelo volume de itens</small>
+            </article>
+            <article class="metric-card metric-blue">
+              <span>Avaliação</span>
+              <strong id="metricRating">0/5</strong>
+              <small>Indicador inicial do painel</small>
+            </article>
+          </div>
+
+          <div class="content-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Operação</p>
+                  <h2>Últimos pedidos</h2>
+                </div>
+                <a class="button button-ghost" href="pedidos.html">Ver tudo</a>
+              </div>
+
+              <div id="ownerStatusMessage" class="alert alert-success">Carregando dados...</div>
+              <div id="ordersList" class="order-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Ações rápidas</p>
+                  <h2>Gerencie o negócio</h2>
+                </div>
+              </div>
+
+              <div id="quickActions" class="finance-list"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/owner-dashboard.js"></script>
+  </body>
+</html>

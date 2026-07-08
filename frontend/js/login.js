@@ -29,7 +29,7 @@ createApp({
 
         Auth.saveToken(response.data.access_token)
         tokenReceived.value = true
-        location.href = '../index.html'
+        location.href = 'homeowner.html'
       } catch (error) {
         errorMessage.value = error?.response?.data?.msg || 'Nao foi possivel fazer login.'
         console.error(error)
