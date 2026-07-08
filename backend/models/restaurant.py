@@ -28,6 +28,21 @@ class Restaurant(db.Model):
         lazy=True,
     )
 
+    @validates("owner_id")
+    def validate_owner_id(self, key, owner_id):
+        if owner_id is None:
+            return owner_id
+
+        from models.user import User
+
+        owner = db.session.get(User, owner_id)
+        if owner is None or owner.role != "owner":
+            raise ValueError(
+                "Restaurant owner_id must reference a user with role='owner'"
+            )
+
+        return owner_id
+
     @validates("owner")
     def validate_owner(self, key, owner):
         if owner is not None and owner.role != "owner":

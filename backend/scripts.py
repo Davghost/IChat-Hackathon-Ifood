@@ -1,8 +1,9 @@
 from main import app
 from factory import db
 from models.menu_item import MenuItem
+from models.restaurant import Restaurant
 
-OWNER_ID = 2
+RESTAURANT_OWNER_ID = 4
 
 menus = [
     {
@@ -55,11 +56,20 @@ menus = [
     },
 ]
 
-
 with app.app_context():
+    restaurant = Restaurant(
+        name="Restaurante Teste",
+        description="Restaurante de teste para demonstração do sistema.",
+        owner_id=RESTAURANT_OWNER_ID,
+    )
+
+    db.session.add(restaurant)
+    db.session.flush()
+
     for menu in menus:
         item = MenuItem(
-            owner_id=OWNER_ID,
+            owner_id=restaurant.owner_id,
+            restaurant_id=restaurant.id,
             title=menu["title"],
             name=menu["name"],
             description=menu["description"],
@@ -69,4 +79,4 @@ with app.app_context():
 
     db.session.commit()
 
-print(f"{len(menus)} menus criados com sucesso!")
+    print(f"Restaurante {restaurant.id} criado com {len(menus)} menus.")

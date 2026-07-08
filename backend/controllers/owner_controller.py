@@ -5,6 +5,7 @@ from models.menu_item import MenuItem
 from models.restaurant import Restaurant
 from utils.response_schema import GenericResponse
 from spectree import Response
+from spectree.models import ValidationError as SpectreeValidationError
 from flask_jwt_extended import jwt_required, current_user
 from pydantic import BaseModel
 
@@ -27,7 +28,7 @@ class MenuItemMessage(BaseModel):
     name: str
     price: float
     description: str
-    restaurant_id: int | None = None
+    restaurant_id: int
 
 
 class MenuItemResponse(BaseModel):
@@ -36,7 +37,7 @@ class MenuItemResponse(BaseModel):
     name: str
     price: float
     description: str
-    restaurant_id: int | None = None
+    restaurant_id: int
 
 
 def _owner_required():
@@ -47,9 +48,6 @@ def _owner_required():
 
 
 def _find_owner_restaurant(restaurant_id):
-    if restaurant_id is None:
-        return None
-
     return Restaurant.query.filter_by(
         id=restaurant_id,
         owner_id=current_user.id,
@@ -156,7 +154,11 @@ def delete_restaurant(restaurant_id):
 @owner_controller.post('/menus')
 @api.validate(
     json=MenuItemMessage,
-    resp=Response(HTTP_201=MenuItemResponse, HTTP_400=GenericResponse),
+    resp=Response(
+        HTTP_201=MenuItemResponse,
+        HTTP_400=SpectreeValidationError,
+        HTTP_404=GenericResponse,
+    ),
     tags=['owner'],
 )
 @jwt_required()
@@ -166,8 +168,8 @@ def create_menu_item():
     if auth_error:
         return auth_error
 
-    restaurant = _find_owner_restaurant(data.get('restaurant_id'))
-    if data.get('restaurant_id') is not None and not restaurant:
+    restaurant = _find_owner_restaurant(data['restaurant_id'])
+    if not restaurant:
         return {'msg': 'Restaurant not found'}, 404
 
     menu_item = MenuItem(
@@ -176,7 +178,7 @@ def create_menu_item():
         price=float(data['price']),
         description=data['description'],
         owner_id=current_user.id,
-        restaurant_id=restaurant.id if restaurant else None,
+        restaurant_id=restaurant.id,
     )
     db.session.add(menu_item)
     db.session.commit()
@@ -199,7 +201,11 @@ def list_menu_items():
 @owner_controller.put('/menus/<int:menu_id>')
 @api.validate(
     json=MenuItemMessage,
-    resp=Response(HTTP_200=MenuItemResponse, HTTP_404=GenericResponse),
+    resp=Response(
+        HTTP_200=MenuItemResponse,
+        HTTP_400=SpectreeValidationError,
+        HTTP_404=GenericResponse,
+    ),
     tags=['owner'],
 )
 @jwt_required()
@@ -213,15 +219,15 @@ def update_menu_item(menu_id):
         return {'msg': 'Menu item not found'}, 404
 
     data = request.json
-    restaurant = _find_owner_restaurant(data.get('restaurant_id'))
-    if data.get('restaurant_id') is not None and not restaurant:
+    restaurant = _find_owner_restaurant(data['restaurant_id'])
+    if not restaurant:
         return {'msg': 'Restaurant not found'}, 404
 
     menu_item.title = data['title']
     menu_item.name = data['name']
     menu_item.price = float(data['price'])
     menu_item.description = data['description']
-    menu_item.restaurant_id = restaurant.id if restaurant else None
+    menu_item.restaurant_id = restaurant.id
     db.session.commit()
 
     return _menu_item_response(menu_item), 200

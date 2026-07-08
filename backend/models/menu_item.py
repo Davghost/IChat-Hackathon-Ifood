@@ -14,7 +14,7 @@ class MenuItem(db.Model):
     restaurant_id = db.Column(
         db.Integer,
         db.ForeignKey("restaurants.id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 

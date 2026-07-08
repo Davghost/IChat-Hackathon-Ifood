@@ -1,19 +1,34 @@
 from datetime import datetime
 
 from factory import api
-from flask import Blueprint, request
+from flask import Blueprint, request, url_for
 from models.user import UserResponse
 from models.restaurant import Restaurant
 from utils.response_schema import GenericResponse
 from spectree import Response
+from spectree.models import ValidationError as SpectreeValidationError
 from flask_jwt_extended import jwt_required, current_user
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import selectinload
 
 user_controller = Blueprint("user_controller", __name__, url_prefix="/api/users")
 
 DEFAULT_RESTAURANTS_PER_PAGE = 20
 MAX_RESTAURANTS_PER_PAGE = 50
+
+
+class RestaurantsQuery(BaseModel):
+    page: int = Field(
+        default=1,
+        ge=1,
+        description="Page number to return.",
+    )
+    per_page: int = Field(
+        default=DEFAULT_RESTAURANTS_PER_PAGE,
+        ge=1,
+        le=MAX_RESTAURANTS_PER_PAGE,
+        description="Number of restaurants per page.",
+    )
 
 
 class PublicMenuItemResponse(BaseModel):
@@ -32,7 +47,18 @@ class PublicRestaurantResponse(BaseModel):
     id: int
     name: str
     description: str
+    owner_id: int
+    created_at: datetime | None
+    updated_at: datetime | None
     menu_items: list[PublicMenuItemResponse]
+
+
+class PaginationLinks(BaseModel):
+    current: str
+    first: str | None
+    previous: str | None
+    next: str | None
+    last: str | None
 
 
 class RestaurantsPageResponse(BaseModel):
@@ -42,21 +68,41 @@ class RestaurantsPageResponse(BaseModel):
     pages: int
     has_next: bool
     has_prev: bool
+    next_page: int | None
+    prev_page: int | None
+    first_page: int | None
+    last_page: int | None
+    links: PaginationLinks
     restaurants: list[PublicRestaurantResponse]
 
 
-def _positive_int_arg(name, default):
-    raw_value = request.args.get(name, default)
+def _page_url(page, per_page):
+    args = request.args.to_dict(flat=True)
+    args["page"] = page
+    args["per_page"] = per_page
 
-    try:
-        value = int(raw_value)
-    except (TypeError, ValueError):
-        return None, ({'msg': f'{name} must be a positive integer'}, 400)
+    return url_for("user_controller.list_restaurants_with_menus", **args)
 
-    if value < 1:
-        return None, ({'msg': f'{name} must be a positive integer'}, 400)
 
-    return value, None
+def _pagination_links(pagination):
+    first_page = 1 if pagination.pages else None
+    last_page = pagination.pages or None
+
+    return PaginationLinks(
+        current=_page_url(pagination.page, pagination.per_page),
+        first=_page_url(first_page, pagination.per_page) if first_page else None,
+        previous=(
+            _page_url(pagination.prev_num, pagination.per_page)
+            if pagination.has_prev
+            else None
+        ),
+        next=(
+            _page_url(pagination.next_num, pagination.per_page)
+            if pagination.has_next
+            else None
+        ),
+        last=_page_url(last_page, pagination.per_page) if last_page else None,
+    )
 
 
 def _menu_item_response(menu_item):
@@ -74,13 +120,25 @@ def _menu_item_response(menu_item):
 
 
 def _restaurant_response(restaurant):
+    menu_items = sorted(
+        (
+            menu_item
+            for menu_item in restaurant.menu_items
+            if menu_item.restaurant_id == restaurant.id
+        ),
+        key=lambda item: item.id,
+    )
+
     return PublicRestaurantResponse(
         id=restaurant.id,
         name=restaurant.name,
         description=restaurant.description,
+        owner_id=restaurant.owner_id,
+        created_at=restaurant.created_at,
+        updated_at=restaurant.updated_at,
         menu_items=[
             _menu_item_response(menu_item)
-            for menu_item in sorted(restaurant.menu_items, key=lambda item: item.id)
+            for menu_item in menu_items
         ],
     )
 
@@ -102,26 +160,22 @@ def get_user():
 
 @user_controller.get("/restaurants")
 @api.validate(
-    resp=Response(HTTP_200=RestaurantsPageResponse, HTTP_400=GenericResponse),
+    query=RestaurantsQuery,
+    resp=Response(
+        HTTP_200=RestaurantsPageResponse,
+        HTTP_400=SpectreeValidationError,
+    ),
     tags=["users"],
 )
 @jwt_required()
 def list_restaurants_with_menus():
-    page, error = _positive_int_arg("page", 1)
-    if error:
-        return error
-
-    per_page, error = _positive_int_arg("per_page", DEFAULT_RESTAURANTS_PER_PAGE)
-    if error:
-        return error
-
-    per_page = min(per_page, MAX_RESTAURANTS_PER_PAGE)
+    query = request.context.query
 
     pagination = Restaurant.query.options(
         selectinload(Restaurant.menu_items)
     ).order_by(Restaurant.id).paginate(
-        page=page,
-        per_page=per_page,
+        page=query.page,
+        per_page=query.per_page,
         error_out=False,
     )
 
@@ -132,6 +186,11 @@ def list_restaurants_with_menus():
         pages=pagination.pages,
         has_next=pagination.has_next,
         has_prev=pagination.has_prev,
+        next_page=pagination.next_num if pagination.has_next else None,
+        prev_page=pagination.prev_num if pagination.has_prev else None,
+        first_page=1 if pagination.pages else None,
+        last_page=pagination.pages or None,
+        links=_pagination_links(pagination),
         restaurants=[
             _restaurant_response(restaurant)
             for restaurant in pagination.items

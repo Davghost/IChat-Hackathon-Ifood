@@ -35,12 +35,12 @@ def populate_admin_user():
 
 def populate_owner():
     user= User(
-        username="duda",
-        email="duda4@gmail.com",
+        username="string1",
+        email="string1",
         role="owner"
     )
 
-    user.password = "123"
+    user.password = "string"
 
     db.session.add(user)
     db.session.commit()

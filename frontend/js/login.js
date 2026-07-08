@@ -1,9 +1,6 @@
-const { createApp, ref } = Vue
+const { createApp, nextTick, onMounted, ref } = Vue
 
 createApp({
-  components: {
-    AppPageNote
-  },
   setup() {
     const email = ref('')
     const password = ref('')
@@ -34,12 +31,22 @@ createApp({
         tokenReceived.value = true
         location.href = '../index.html'
       } catch (error) {
-        errorMessage.value = 'Nao foi possível fazer login.'
+        errorMessage.value = error?.response?.data?.msg || 'Nao foi possivel fazer login.'
         console.error(error)
       } finally {
         loginLoading.value = false
       }
     }
+
+    function refreshIcons() {
+      nextTick(() => {
+        if (window.lucide) {
+          window.lucide.createIcons()
+        }
+      })
+    }
+
+    onMounted(refreshIcons)
 
     return {
       email,

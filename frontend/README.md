@@ -1,36 +1,33 @@
-# Frontend Template
+# iFood Manager Frontend
 
-Template simples com HTML estático, Vue 3 por CDN e JavaScript separado por página.
+Frontend estatico em HTML, CSS e Vue 3 via CDN para donos de restaurante.
 
-## Estrutura
+## Telas
 
-- `index.html`: página inicial do template
-- `pages/login.html`: exemplo de formulário de login
-- `js/api.js`: instância do Axios e configuração da `API_URL`
-- `js/auth.js`: armazenamento e remoção do token JWT
-- `js/index.js`: lógica da página inicial
-- `js/login.js`: lógica da página de login
-- `js/components/app-page-note.js`: componente simples de exemplo com `props`
-- `style.css`: CSS base reutilizável
+- `index.html`: dashboard com resumo do dia, pedidos demonstrativos, CRUD de lojas, CRUD de cardapio e faturamento.
+- `pages/login.html`: login JWT.
 
-## Configurando a API
+## API usada
 
-Edite `js/api.js` e ajuste a constante:
+O arquivo `js/api.js` usa:
 
 ```js
-const API_URL = 'http://localhost:5000'
+const API_URL = 'http://localhost:5000/api'
 ```
 
-## Fluxo de autenticação
+Endpoints integrados:
 
-1. A página `pages/login.html` envia `email` e `password` para `POST /auth/login`
-2. O token retornado é salvo no `localStorage`
-3. A `index.html` verifica se existe token
-4. Quando há token, a página chama `GET /users/me` para mostrar os dados do usuário autenticado
+- `POST /auth/login`
+- `GET /users/me`
+- `GET /owner/restaurants`
+- `POST /owner/restaurants`
+- `PUT /owner/restaurants/:id`
+- `DELETE /owner/restaurants/:id`
+- `GET /owner/menus`
+- `POST /owner/menus`
+- `PUT /owner/menus/:id`
+- `DELETE /owner/menus/:id`
 
-## Como criar novas páginas
+## Observacao
 
-1. Crie um novo arquivo em `pages/`
-2. Reaproveite `../style.css`
-3. Importe `../js/auth.js` e `../js/api.js` quando a página precisar falar com a API
-4. Se quiser seguir o exemplo do template, reaproveite o componente `app-page-note`
+O backend atual nao possui models/controllers de pedidos ou faturamento. Por isso, as secoes de pedidos do dia e faturamento usam uma projecao local baseada nos itens do cardapio carregados da API.
