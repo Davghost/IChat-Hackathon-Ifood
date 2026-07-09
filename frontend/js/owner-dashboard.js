@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (user?.role !== 'owner') {
       showAccessState(
         accessState,
-        'Esta area e exclusiva para donos de restaurante.',
+        'Esta area e exclusiva para contas owner.',
         'Abrir area do cliente',
         'homeclient.html'
       )

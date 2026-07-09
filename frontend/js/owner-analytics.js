@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const revenueValue = document.getElementById('revenueValue')
   const revenueBars = document.getElementById('revenueBars')
   const financeList = document.getElementById('financeList')
-  const forecastList = document.getElementById('forecastList')
+  const topItemsList = document.getElementById('topItemsList')
 
   logoutButton?.addEventListener('click', () => {
     App.logout()
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   hide(guestState)
 
   if (!Auth.isLoggedIn()) {
-    showState(guestState, 'Entre para ver faturamento e previsoes.', 'Ir para login', 'login.html')
+    showState(guestState, 'Entre para ver faturamento e historico.', 'Ir para login', 'login.html')
     return
   }
 
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const history = historyResponse.data || {}
     const summary = history.summary || {}
     const charts = history.charts || []
-    const forecasts = buildForecasts(charts)
+    const topItems = history.top_menu_items || []
 
     revenueValue.textContent = App.formatCurrency(summary.total_revenue)
     revenueBars.innerHTML = renderRevenueBars(charts)
@@ -68,15 +68,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       <p><span>Top item</span><strong>${App.escapeHtml(summary.top_menu_item?.name || 'Sem dados')}</strong></p>
     `
 
-    forecastList.innerHTML = forecasts.length
-      ? forecasts.map((item) => `
-          <div class="forecast-item">
-            <strong>${App.escapeHtml(item.date)}</strong>
-            <span>${App.formatCurrency(item.predicted_revenue)}</span>
-            <small>${item.predicted_orders} pedido(s) · ${item.predicted_items_sold} item(ns)</small>
-          </div>
+    topItemsList.innerHTML = topItems.length
+      ? topItems.map((item, index) => `
+          <article class="best-item">
+            <span>${String(index + 1).padStart(2, '0')}</span>
+            <div>
+              <strong>${App.escapeHtml(item.name)}</strong>
+              <small>${item.quantity} vendidos</small>
+            </div>
+            <strong>${App.formatCurrency(item.revenue)}</strong>
+          </article>
         `).join('')
-      : '<p class="empty-cart">Sem previsao disponivel.</p>'
+      : '<p class="empty-cart">Sem itens vendidos no periodo.</p>'
 
     setAlert('Faturamento e historico carregados com a API atual.', 'success')
   }
@@ -90,33 +93,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     alertBox.textContent = message
   }
 })
-
-function buildForecasts(points) {
-  if (!points.length) {
-    return []
-  }
-
-  const recentPoints = points.slice(-7)
-  const totalRevenue = recentPoints.reduce((sum, point) => sum + Number(point.revenue || 0), 0)
-  const totalOrders = recentPoints.reduce((sum, point) => sum + Number(point.orders || 0), 0)
-  const totalItems = recentPoints.reduce((sum, point) => sum + Number(point.items_sold || 0), 0)
-  const baseDate = new Date(`${recentPoints[recentPoints.length - 1].date}T00:00:00`)
-  const averageRevenue = totalRevenue / recentPoints.length
-  const averageOrders = totalOrders / recentPoints.length
-  const averageItems = totalItems / recentPoints.length
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const nextDate = new Date(baseDate)
-    nextDate.setDate(baseDate.getDate() + index + 1)
-
-    return {
-      date: nextDate.toLocaleDateString('pt-BR'),
-      predicted_revenue: Number(averageRevenue.toFixed(2)),
-      predicted_orders: Math.round(averageOrders),
-      predicted_items_sold: Math.round(averageItems)
-    }
-  })
-}
 
 function renderRevenueBars(points) {
   if (!points.length) {

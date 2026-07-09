@@ -9,22 +9,21 @@
   <body>
     <main id="app" class="login-shell" v-cloak>
       <section class="login-hero">
-        <a class="brand" href="homeclient.html" aria-label="iFood Manager">
+        <a class="brand" href="homeowner.html" aria-label="iFood Manager">
           <img src="../img/logo-smile-512x512.png" alt="logo-ifood" class="logo">
-          
           <span>
             <strong>Painel de controle</strong>
           </span>
         </a>
         <div class="login-copy">
-          <p class="eyebrow">Autenticação</p>
-          <h1>Entre e siga para a area correta do seu perfil.</h1>
+          <p class="eyebrow">Autenticacao</p>
+          <h1>Entre para acessar o painel owner disponivel na API atual.</h1>
         </div>
       </section>
 
       <section class="login-card">
         <div class="login-card-header">
-          <p class="eyebrow">Sessão</p>
+          <p class="eyebrow">Sessao</p>
           <h2>Login</h2>
         </div>
 
@@ -47,7 +46,7 @@
         <p v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</p>
         <p v-if="tokenReceived" class="alert alert-success">Login realizado.</p>
 
-        <a class="login-back" href="homeclient.html">Voltar para a vitrine</a>
+        <a class="login-back" href="homeowner.html">Ir para o painel</a>
       </section>
     </main>
 

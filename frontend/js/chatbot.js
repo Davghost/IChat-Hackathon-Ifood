@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const chatButton = document.getElementById('chatButton')
   const chatOverlay = document.getElementById('chatOverlay')
+  const chatWindow = chatOverlay?.querySelector('.chat-window')
   const chatClose = document.querySelector('.chat-close')
   const chatInput = document.getElementById('chatInput')
   const sendButton = document.getElementById('sendMessage')
@@ -10,18 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return
   }
 
-  const initialMarkup = chatBody.innerHTML
-
   chatButton.addEventListener('click', () => {
     chatOverlay.classList.add('active')
+    chatInput.focus()
   })
 
   chatClose?.addEventListener('click', closeChat)
 
-  chatOverlay.addEventListener('click', (event) => {
-    if (event.target === chatOverlay) {
-      closeChat()
-    }
+  chatWindow?.addEventListener('click', (event) => {
+    event.stopPropagation()
   })
 
   sendButton.addEventListener('click', sendMessage)
@@ -32,9 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && chatOverlay.classList.contains('active')) {
+      closeChat()
+    }
+  })
+
   function closeChat() {
     chatOverlay.classList.remove('active')
-    chatBody.innerHTML = initialMarkup
   }
 
   async function sendMessage() {
@@ -52,6 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await api.post('/owner/chat', { message: text })
       loadingNode.textContent = normalizeChatReply(response.data?.chatbot_response)
     } catch (error) {
+      if (error?.response?.status === 401 || error?.response?.status === 422) {
+        App.logout()
+        loadingNode.textContent = 'Sua sessao expirou. Entre novamente.'
+        window.setTimeout(() => {
+          location.href = 'login.html'
+        }, 600)
+        return 
+      }
+      console.log('Erro ao consultar assistente:', error)
       loadingNode.textContent = error?.response?.data?.msg || 'Nao foi possivel consultar o assistente.'
     } finally {
       setPending(false)
@@ -70,21 +82,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function normalizeChatReply(payload) {
     if (typeof payload === 'string') {
-      return payload
+      return payload.trim() || 'Assistente respondeu sem conteudo.'
     }
 
     if (Array.isArray(payload)) {
-      return payload.map(formatReplyEntry).join('\n')
+      const lines = payload.map(formatReplyEntry).filter(Boolean)
+      return lines.join('\n') || 'Assistente respondeu sem conteudo.'
     }
 
     if (payload && typeof payload === 'object') {
-      if (typeof payload.answer === 'string') {
-        return payload.answer
+      const preferredKeys = ['answer', 'response', 'message', 'output', 'text']
+      for (const key of preferredKeys) {
+        if (typeof payload[key] === 'string' && payload[key].trim()) {
+          return payload[key].trim()
+        }
       }
-      if (typeof payload.response === 'string') {
-        return payload.response
-      }
-      return JSON.stringify(payload, null, 2)
+
+      const nestedText = Object.values(payload)
+        .map(formatReplyEntry)
+        .filter(Boolean)
+        .join('\n')
+      return nestedText || JSON.stringify(payload, null, 2)
     }
 
     return 'Assistente respondeu sem conteudo.'
@@ -92,9 +110,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function formatReplyEntry(entry) {
     if (typeof entry === 'string') {
-      return entry
+      return entry.trim()
     }
-    return JSON.stringify(entry)
+
+    if (Array.isArray(entry)) {
+      return entry.map(formatReplyEntry).filter(Boolean).join('\n')
+    }
+
+    if (entry && typeof entry === 'object') {
+      const preferredKeys = ['answer', 'response', 'message', 'output', 'text']
+      for (const key of preferredKeys) {
+        if (typeof entry[key] === 'string' && entry[key].trim()) {
+          return entry[key].trim()
+        }
+      }
+      return JSON.stringify(entry)
+    }
+
+    return ''
   }
 
   function setPending(isPending) {

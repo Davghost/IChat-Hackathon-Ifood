@@ -16,16 +16,15 @@
           </span>
         </a>
 
-        <nav class="nav-list" aria-label="Navegação">
+        <nav class="nav-list" aria-label="Navegacao">
           <a class="nav-item active" href="homeowner.html">Resumo</a>
           <a class="nav-item" href="pedidos.html">Pedidos</a>
           <a class="nav-item" href="cardapio.html">Cardapio</a>
-     
           <a class="nav-item" href="faturamento.html">Faturamento</a>
         </nav>
 
         <div class="sidebar-footer">
-          <p id="ownerIdentity">Sessão nao iniciada</p>
+          <p id="ownerIdentity">Sessao nao iniciada</p>
           <button id="logoutButton" class="button button-ghost small-button" type="button">Sair</button>
         </div>
       </aside>
@@ -34,7 +33,7 @@
         <header class="topbar">
           <div>
             <p class="page-kicker">Dashboard</p>
-            <h1 class="page-title">Acompanhamento da operação</h1>
+            <h1 class="page-title">Acompanhamento da operacao</h1>
             <p class="page-subtitle">Resumo com dados reais do backend para pedidos, receita e desempenho do cardapio.</p>
           </div>
         </header>
@@ -109,68 +108,42 @@
       </section>
     </main>
 
-    <!-- Botão flutuante -->
-<button id="chatButton" class="chat-button">
-    💬
-</button>
+    <button id="chatButton" class="chat-button" type="button">Chat</button>
 
-<!-- Overlay -->
-<div id="chatOverlay" class="chat-overlay">
-
-    <div class="chat-window">
-
+    <div id="chatOverlay" class="chat-overlay">
+      <div class="chat-window">
         <div class="chat-header">
+          <div class="chat-header-info">
+            <div class="chat-avatar">AI</div>
 
-            <div class="chat-header-info">
-                <div class="chat-avatar">
-                    🤖
-                </div>
-
-                <div>
-                    <strong>Assistente iFood</strong>
-                    <p>Online</p>
-                </div>
+            <div>
+              <strong>Assistente iFood</strong>
+              <p>Online</p>
             </div>
+          </div>
 
-            <button class="chat-close">
-                ✕
-            </button>
-
+          <button class="chat-close" type="button">X</button>
         </div>
 
-        <div id="chatBody"  class="chat-body">
-
-            <div class="message bot">
-                Olá! 👋<br>
-                Como posso ajudar você hoje?
-            </div>
-
-            <!-- mensagens -->
-
+        <div id="chatBody" class="chat-body">
+          <div class="message bot">Ola! Como posso ajudar voce hoje?</div>
         </div>
 
         <div class="chat-footer">
+          <input
+            id="chatInput"
+            type="text"
+            placeholder="Digite sua mensagem..."
+          >
 
-            <input
-                id="chatInput"
-                type="text"
-                placeholder="Digite sua mensagem..."
-            >
-
-            <button id="sendMessage">
-                ➜
-            </button>
-
+          <button id="sendMessage" type="button">></button>
         </div>
-
+      </div>
     </div>
-
-</div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/api.js"></script>
-    
     <script src="../js/app-utils.js"></script>
     <script src="../js/owner-dashboard.js"></script>
     <script src="../js/guard.js"></script>

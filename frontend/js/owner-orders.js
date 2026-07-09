@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   hide(guestState)
 
   if (!Auth.isLoggedIn()) {
-    showState(guestState, 'Entre para acompanhar os pedidos do restaurante.', 'Ir para login', 'login.html')
+    showState(guestState, 'Entre para acompanhar os pedidos da operacao.', 'Ir para login', 'login.html')
     return
   }
 
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (user?.role !== 'owner') {
       showState(
         guestState,
-        'Pedidos do restaurante sao exclusivos da conta owner.',
+        'Os pedidos desta operacao sao exclusivos da conta owner.',
         'Abrir area do cliente',
         'homeclient.html'
       )
