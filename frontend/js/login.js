@@ -28,9 +28,9 @@ createApp({
         })
 
         Auth.saveToken(response.data.access_token)
-        const user = await App.getCurrentUser(true) || {}
+        const user = await App.getCurrentUser()
         tokenReceived.value = true
-        location.href = App.defaultHomeForRole(user.role)
+        location.href = App.defaultHomeForRole(user?.role || 'owner')
       } catch (error) {
         errorMessage.value = error?.response?.data?.msg || 'Nao foi possivel fazer login.'
         console.error(error)

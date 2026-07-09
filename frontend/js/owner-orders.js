@@ -58,9 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       per_page: '12',
       days: '30'
     })
-
+    
     if (statusFilter.value) {
-      params.set('status', statusFilter.value)
+      
     }
 
     try {
