@@ -89,29 +89,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('')
       : '<p class="empty-cart">Sem previsao disponivel.</p>'
 
-    aiMetrics.innerHTML = placeholderMetrics.length
-      ? placeholderMetrics.map((item) => `
-          <p>
-            <span>${App.escapeHtml(item.label || 'PLACEHOLDER')}</span>
-            <strong>${App.escapeHtml(item.value || '')}</strong>
-          </p>
-        `).join('')
-      : '<p class="empty-cart">Sem placeholders de IA disponiveis.</p>'
+    assistantTemplates.innerHTML = templates.map((item) => `
+      <button class="template-chip" type="button" data-question="${App.escapeHtml(item.question)}">
+        ${App.escapeHtml(item.question)}
+      </button>
+    `).join('')
 
-    aiInsights.innerHTML = placeholderInsights.length
-      ? `
-          <strong>${App.escapeHtml(placeholderNote)}</strong>
-          ${placeholderInsights.map((item) => `
-            <p><strong>${App.escapeHtml(item.title || 'PLACEHOLDER')}</strong></p>
-            <p>${App.escapeHtml(item.description || '')}</p>
-          `).join('')}
-        `
-      : `
-          <strong>${App.escapeHtml(placeholderNote)}</strong>
-          <p>Os insights de IA ainda nao foram implementados.</p>
-        `
+    assistantTemplates.querySelectorAll('[data-question]').forEach((button) => {
+      button.addEventListener('click', () => {
+        assistantQuestion.value = button.dataset.question
+      })
+    })
 
-    setAlert('Faturamento, previsoes e placeholders de IA carregados.', 'success')
+    setAlert('Faturamento, previsoes e perguntas prontas carregados.', 'success')
+  }
+
+  async function submitQuestion() {
+    const question = assistantQuestion.value.trim()
+    if (!question) {
+      setAlert('Digite uma pergunta para o assistente.', 'error')
+      return
+    }
+
+    setAlert('Consultando assistente...', 'success')
+
+    try {
+      const response = await api.post('/owner/assistant/chat', { question })
+      const answer = response.data || {}
+      assistantAnswer.innerHTML = `
+        <strong>${App.escapeHtml(answer.answer || '')}</strong>
+      `
+      setAlert('Resposta recebida.', 'success')
+    } catch (error) {
+      setAlert(error?.response?.data?.msg || 'Nao foi possivel consultar o assistente.', 'error')
+    }
   }
 
   function setAlert(message, type) {
@@ -130,14 +141,28 @@ function renderRevenueBars(points) {
   }
 
   const max = Math.max(...points.map((point) => Number(point.revenue || 0)), 1)
-  return points.slice(-7).map((point) => {
-    const height = Math.max(18, Math.round((Number(point.revenue || 0) / max) * 100))
-    return `
-      <span style="height:${height}%">
-        <small>${App.escapeHtml(point.date.slice(5))}</small>
-      </span>
-    `
-  }).join('')
+  const visiblePoints = points.slice(-6)
+
+  return `
+    <div class="mini-chart">
+      ${visiblePoints.map((point) => {
+        const value = Number(point.revenue || 0)
+        const height = Math.max(24, Math.round((value / max) * 100))
+        const date = App.escapeHtml(point.date?.slice(5) || '')
+        const amount = App.escapeHtml(App.formatCurrency(value))
+
+        return `
+          <div class="mini-bar-wrap">
+            <div class="mini-bar-value">${amount}</div>
+            <div class="mini-bar-track">
+              <div class="mini-bar" style="height:${height}%; background:linear-gradient(180deg, #ff8a3d 0%, #f59f00 100%);"></div>
+            </div>
+            <strong>${date}</strong>
+          </div>
+        `
+      }).join('')}
+    </div>
+  `
 }
 
 function showState(element, message, buttonLabel, href) {

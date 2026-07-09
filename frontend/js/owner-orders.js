@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const alertBox = document.getElementById('pageAlert')
   const userBadge = document.getElementById('sidebarUserBadge')
   const logoutButton = document.getElementById('logoutButton')
+  const restaurantFilter = 1
   const statusFilter = document.getElementById('statusFilter')
   const applyFiltersButton = document.getElementById('applyFiltersButton')
   const metrics = document.getElementById('ordersStatusMetrics')
@@ -59,6 +60,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       days: '30'
     })
 
+    if (restaurantFilter.value) {
+      params.set('restaurant_id', 1)
+    }
+
     if (statusFilter.value) {
       params.set('status', statusFilter.value)
     }
@@ -94,7 +99,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       <article class="order-card">
         <div class="order-card-top">
           <div>
-            <p class="eyebrow">#${order.id}</p>
             <h3>${App.escapeHtml(order.customer.username)}</h3>
           </div>
           <span class="status-pill ${App.statusClass(order.status)}">${App.statusLabel(order.status)}</span>

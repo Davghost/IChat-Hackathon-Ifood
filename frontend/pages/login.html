@@ -10,22 +10,22 @@
     <main id="app" class="login-shell" v-cloak>
       <section class="login-hero">
         <a class="brand" href="homeclient.html" aria-label="iFood Manager">
-          <span class="brand-mark">iF</span>
+          <img src="../img/logo-smile-512x512.png" alt="logo-ifood" class="logo">
+          
           <span>
-            <strong>iFood</strong>
-            <small>Access</small>
+            <strong>Painel de controle</strong>
           </span>
         </a>
         <div class="login-copy">
-          <p class="eyebrow">Autenticacao</p>
+          <p class="eyebrow">Autenticação</p>
           <h1>Entre e siga para a area correta do seu perfil.</h1>
         </div>
       </section>
 
       <section class="login-card">
         <div class="login-card-header">
-          <p class="eyebrow">Sessao</p>
-          <h2>Login no backend</h2>
+          <p class="eyebrow">Sessão</p>
+          <h2>Login</h2>
         </div>
 
         <form class="form-stack" @submit.prevent="login">
@@ -53,8 +53,8 @@
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
     <script src="../js/app-utils.js"></script>
     <script src="../js/login.js"></script>
   </body>
