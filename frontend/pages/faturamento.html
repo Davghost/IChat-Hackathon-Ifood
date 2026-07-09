@@ -10,8 +10,7 @@
     <main class="app-shell" v-cloak>
       <aside class="sidebar">
         <a class="brand" href="homeowner.html" aria-label="iFood Owner">
-          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTY4R3cNywEEb-Mdn3Jipkc4Ex0T30tPDX3ONaiJyYm9Q&s=10" alt="logo-ifood" class="logo">
-          
+          <img src="../img/logo-smile-512x512.png" alt="logo-ifood" class="logo">
           <span>
             <strong>Painel de controle</strong>
           </span>
@@ -44,8 +43,8 @@
             <section class="panel revenue-panel">
               <span>Receita acumulada</span>
               <strong id="revenueValue">R$ 0,00</strong>
-              <br>
-              <div id="revenueBars" class="revenue-bars"></div>
+              
+              <div id="revenueBars"></div>
             </section>
 
             <section class="panel">
@@ -69,35 +68,14 @@
               </div>
               <div id="forecastList" class="forecast-list"></div>
             </section>
-
-            <section class="panel">
-              <div class="panel-header">
-                <div>
-                  <p class="eyebrow">Assistente</p>
-                  <h2>Perguntas rapidas</h2>
-                </div>
-              </div>
-              <div id="assistantTemplates" class="template-list"></div>
-              <div class="field field-wide" style="margin-top: 16px;">
-                <span>Pergunta</span>
-                <textarea id="assistantQuestion" rows="3" placeholder="Ex.: Quanto devo vender amanha?"></textarea>
-              </div>
-              <div class="form-actions">
-                <button id="askAssistantButton" class="button button-primary" type="button">Perguntar</button>
-              </div>
-              <div id="assistantAnswer" class="placeholder-panel">
-                <strong>Resposta</strong>
-                <p>Selecione uma pergunta pronta ou envie uma consulta livre.</p>
-              </div>
-            </section>
           </div>
         </section>
       </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
     <script src="../js/app-utils.js"></script>
     <script src="../js/owner-analytics.js"></script>
     <script src="../js/guard.js"></script>

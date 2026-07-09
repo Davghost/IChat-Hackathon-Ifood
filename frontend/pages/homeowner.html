@@ -10,7 +10,7 @@
     <main class="app-shell" v-cloak>
       <aside class="sidebar">
         <a class="brand" href="homeowner.html" aria-label="iFood Manager">
-          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTY4R3cNywEEb-Mdn3Jipkc4Ex0T30tPDX3ONaiJyYm9Q&s=10" alt="logo-ifood" class="logo">
+          <img src="../img/logo-smile-512x512.png" alt="logo-ifood" class="logo">
           <span>
             <strong>Painel de controle</strong>
           </span>
@@ -111,11 +111,71 @@
       </section>
     </main>
 
+    <!-- Botão flutuante -->
+<button id="chatButton" class="chat-button">
+    💬
+</button>
+
+<!-- Overlay -->
+<div id="chatOverlay" class="chat-overlay">
+
+    <div class="chat-window">
+
+        <div class="chat-header">
+
+            <div class="chat-header-info">
+                <div class="chat-avatar">
+                    🤖
+                </div>
+
+                <div>
+                    <strong>Assistente iFood</strong>
+                    <p>Online</p>
+                </div>
+            </div>
+
+            <button class="chat-close">
+                ✕
+            </button>
+
+        </div>
+
+        <div id="chatBody"  class="chat-body">
+
+            <div class="message bot">
+                Olá! 👋<br>
+                Como posso ajudar você hoje?
+            </div>
+
+            <!-- mensagens -->
+
+        </div>
+
+        <div class="chat-footer">
+
+            <input
+                id="chatInput"
+                type="text"
+                placeholder="Digite sua mensagem..."
+            >
+
+            <button id="sendMessage">
+                ➜
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    
     <script src="../js/app-utils.js"></script>
     <script src="../js/owner-dashboard.js"></script>
     <script src="../js/guard.js"></script>
+    <script src="../js/chatbot.js"></script>
   </body>
 </html>

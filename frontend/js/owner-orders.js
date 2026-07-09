@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const alertBox = document.getElementById('pageAlert')
   const userBadge = document.getElementById('sidebarUserBadge')
   const logoutButton = document.getElementById('logoutButton')
-  const restaurantFilter = document.getElementById('restaurantFilter')
+  const restaurantFilter = 1
   const statusFilter = document.getElementById('statusFilter')
   const applyFiltersButton = document.getElementById('applyFiltersButton')
   const metrics = document.getElementById('ordersStatusMetrics')
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     })
 
     if (restaurantFilter.value) {
-      params.set('restaurant_id', restaurantFilter.value)
+      params.set('restaurant_id', 1)
     }
 
     if (statusFilter.value) {
