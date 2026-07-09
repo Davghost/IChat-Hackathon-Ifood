@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const chatButton = document.getElementById('chatButton')
   const chatOverlay = document.getElementById('chatOverlay')
+  const chatWindow = chatOverlay?.querySelector('.chat-window')
   const chatClose = document.querySelector('.chat-close')
   const chatInput = document.getElementById('chatInput')
   const sendButton = document.getElementById('sendMessage')
@@ -10,18 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return
   }
 
-  const initialMarkup = chatBody.innerHTML
-
   chatButton.addEventListener('click', () => {
     chatOverlay.classList.add('active')
+    chatInput.focus()
   })
 
   chatClose?.addEventListener('click', closeChat)
 
-  chatOverlay.addEventListener('click', (event) => {
-    if (event.target === chatOverlay) {
-      closeChat()
-    }
+  chatWindow?.addEventListener('click', (event) => {
+    event.stopPropagation()
   })
 
   sendButton.addEventListener('click', sendMessage)
@@ -32,9 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && chatOverlay.classList.contains('active')) {
+      closeChat()
+    }
+  })
+
   function closeChat() {
     chatOverlay.classList.remove('active')
-    chatBody.innerHTML = initialMarkup
   }
 
   async function sendMessage() {
