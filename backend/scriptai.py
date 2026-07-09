@@ -14,7 +14,7 @@ URL = os.environ.get('URL')
 KEY = os.environ.get('KEY')
 
 supabase = create_client(URL, KEY)
-SOURCE_TABLE = "train"
+SOURCE_TABLE = "test"
 
 
 def get_orders():

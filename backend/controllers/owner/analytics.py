@@ -1,13 +1,14 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from models.order import (
+from .orders import (
+    APP_TIMEZONE,
     ORDER_STATUS_DELIVERED,
     ORDER_STATUS_NEW,
     ORDER_STATUS_PREPARING,
     ORDER_STATUS_READY,
+    localize_datetime,
 )
-from .orders import APP_TIMEZONE, localize_datetime
 from .schemas import (
     AnalyticsChartPointResponse,
     AnalyticsHistoryResponse,
@@ -39,11 +40,10 @@ def top_menu_item_metrics(grouped_items):
 
     quantity, revenue, menu_item = max(
         grouped_items.values(),
-        key=lambda item: (item[0], item[1], item[2].name),
+        key=lambda item: (item[0], item[1], item[2]),
     )
     return TopMenuItemMetricsResponse(
-        menu_item_id=menu_item.id,
-        name=menu_item.name,
+        name=menu_item,
         quantity=quantity,
         revenue=round(revenue, 2),
     )
@@ -52,20 +52,19 @@ def top_menu_item_metrics(grouped_items):
 def build_top_menu_items(orders, limit=TOP_MENU_ITEMS_LIMIT):
     grouped = defaultdict(lambda: [0, 0.0, None])
     for order in orders:
-        grouped_item = grouped[order.menu_item_id]
-        grouped_item[0] += order.quantity
-        grouped_item[1] += order.total_price
-        grouped_item[2] = order.menu_item
+        grouped_item = grouped[order["main_dish"]]
+        grouped_item[0] += order["quantity"]
+        grouped_item[1] += order["total_price"]
+        grouped_item[2] = order["main_dish"]
 
     top_items = sorted(
         grouped.values(),
-        key=lambda item: (-item[0], -item[1], item[2].name),
+        key=lambda item: (-item[0], -item[1], item[2]),
     )[:limit]
 
     return [
         TopMenuItemMetricsResponse(
-            menu_item_id=menu_item.id,
-            name=menu_item.name,
+            name=menu_item,
             quantity=quantity,
             revenue=round(revenue, 2),
         )
@@ -79,24 +78,24 @@ def best_weekday(orders):
 
     revenue_by_weekday = defaultdict(float)
     for order in orders:
-        weekday = localize_datetime(order.created_at).weekday()
-        revenue_by_weekday[weekday] += order.total_price
+        weekday = localize_datetime(order["order_time"]).weekday()
+        revenue_by_weekday[weekday] += order["total_price"]
 
     best_day = max(revenue_by_weekday.items(), key=lambda item: (item[1], -item[0]))[0]
     return WEEKDAY_NAMES[best_day]
 
 
 def build_daily_charts(start_date, end_date, orders):
-    points = {
-        start_date + timedelta(days=index): [0, 0.0, 0]
-        for index in range((end_date - start_date).days + 1)
-    }
+    # O historico analitico deve refletir apenas dias com dados reais.
+    # Diferente do dashboard, aqui nao faz sentido preencher lacunas com zero,
+    # porque isso infla a serie com pontos artificiais e piora a leitura do frontend.
+    points = defaultdict(lambda: [0, 0.0, 0])
     for order in orders:
-        order_date = localize_datetime(order.created_at).date()
+        order_date = localize_datetime(order["order_time"]).date()
         day_point = points[order_date]
         day_point[0] += 1
-        day_point[1] += order.total_price
-        day_point[2] += order.quantity
+        day_point[1] += order["total_price"]
+        day_point[2] += order["quantity"]
 
     return [
         AnalyticsChartPointResponse(
@@ -105,7 +104,7 @@ def build_daily_charts(start_date, end_date, orders):
             revenue=round(metrics[1], 2),
             items_sold=metrics[2],
         )
-        for day, metrics in points.items()
+        for day, metrics in sorted(points.items())
     ]
 
 
@@ -113,9 +112,13 @@ def dashboard_response(days, orders):
     now_local = datetime.now(APP_TIMEZONE)
     today = now_local.date()
     start_date = today - timedelta(days=days - 1)
-    filtered_orders = [order for order in orders if start_date <= localize_datetime(order.created_at).date() <= today]
+    filtered_orders = [
+        order
+        for order in orders
+        if start_date <= localize_datetime(order["order_time"]).date() <= today
+    ]
     today_orders = [
-        order for order in filtered_orders if localize_datetime(order.created_at).date() == today
+        order for order in filtered_orders if localize_datetime(order["order_time"]).date() == today
     ]
 
     orders_by_day = {start_date + timedelta(days=index): 0 for index in range(days)}
@@ -123,25 +126,25 @@ def dashboard_response(days, orders):
     today_top_items = defaultdict(lambda: [0, 0.0, None])
 
     for order in filtered_orders:
-        order_date = localize_datetime(order.created_at).date()
+        order_date = localize_datetime(order["order_time"]).date()
         orders_by_day[order_date] += 1
-        revenue_by_day[order_date] += order.total_price
+        revenue_by_day[order_date] += order["total_price"]
 
         if order_date == today:
-            today_item = today_top_items[order.menu_item_id]
-            today_item[0] += order.quantity
-            today_item[1] += order.total_price
-            today_item[2] = order.menu_item
+            today_item = today_top_items[order["main_dish"]]
+            today_item[0] += order["quantity"]
+            today_item[1] += order["total_price"]
+            today_item[2] = order["main_dish"]
 
-    revenue_today = round(sum(order.total_price for order in today_orders), 2)
-    items_sold_today = sum(order.quantity for order in today_orders)
+    revenue_today = round(sum(order["total_price"] for order in today_orders), 2)
+    items_sold_today = sum(order["quantity"] for order in today_orders)
     pending_orders_today = sum(
         1
         for order in today_orders
-        if order.status in (ORDER_STATUS_NEW, ORDER_STATUS_PREPARING, ORDER_STATUS_READY)
+        if order["status"] in (ORDER_STATUS_NEW, ORDER_STATUS_PREPARING, ORDER_STATUS_READY)
     )
     completed_orders_today = sum(
-        1 for order in today_orders if order.status == ORDER_STATUS_DELIVERED
+        1 for order in today_orders if order["status"] == ORDER_STATUS_DELIVERED
     )
 
     return DashboardResponse(
@@ -172,9 +175,9 @@ def dashboard_response(days, orders):
 
 
 def analytics_history_response(start_date, end_date, orders):
-    total_revenue = round(sum(order.total_price for order in orders), 2)
+    total_revenue = round(sum(order["total_price"] for order in orders), 2)
     total_orders = len(orders)
-    items_sold = sum(order.quantity for order in orders)
+    items_sold = sum(order["quantity"] for order in orders)
     top_items = build_top_menu_items(orders)
 
     return AnalyticsHistoryResponse(

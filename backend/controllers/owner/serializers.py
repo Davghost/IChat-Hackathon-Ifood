@@ -1,53 +1,48 @@
 from .schemas import (
-    MenuItemResponse,
+    OwnerOrderContextResponse,
+    OwnerOrderCourierResponse,
     OwnerOrderCustomerResponse,
-    OwnerOrderMenuItemResponse,
+    OwnerOrderLocationResponse,
     OwnerOrderResponse,
-    OwnerOrderRestaurantResponse,
-    RestaurantResponse,
+    OwnerOrderRouteResponse,
 )
-
-
-def restaurant_response(restaurant):
-    return RestaurantResponse(
-        id=restaurant.id,
-        name=restaurant.name,
-        description=restaurant.description,
-    ).model_dump()
-
-
-def menu_item_response(menu_item):
-    return MenuItemResponse(
-        id=menu_item.id,
-        title=menu_item.title,
-        name=menu_item.name,
-        price=menu_item.price,
-        description=menu_item.description,
-        restaurant_id=menu_item.restaurant_id,
-    ).model_dump()
 
 
 def order_response(order):
     return OwnerOrderResponse(
-        id=order.id,
+        id=order["id"],
+        order_id=order["order_id"],
         customer=OwnerOrderCustomerResponse(
-            id=order.customer.id,
-            username=order.customer.username,
-            email=order.customer.email,
+            name=order["customer_name"],
+            email=order["customer_email"],
         ),
-        restaurant=OwnerOrderRestaurantResponse(
-            id=order.restaurant.id,
-            name=order.restaurant.name,
+        courier=OwnerOrderCourierResponse(
+            name=order["courier_name"],
+            vehicle=order["courier_vehicle"],
         ),
-        menu_item=OwnerOrderMenuItemResponse(
-            id=order.menu_item.id,
-            title=order.menu_item.title,
-            name=order.menu_item.name,
+        route=OwnerOrderRouteResponse(
+            restaurant=OwnerOrderLocationResponse(
+                lat=order["restaurant_lat"],
+                lng=order["restaurant_lng"],
+            ),
+            customer=OwnerOrderLocationResponse(
+                lat=order["customer_lat"],
+                lng=order["customer_lng"],
+            ),
         ),
-        quantity=order.quantity,
-        unit_price=order.unit_price,
-        total_price=order.total_price,
-        status=order.status,
-        created_at=order.created_at,
-        updated_at=order.updated_at,
+        context=OwnerOrderContextResponse(
+            weather=order["weather"],
+            traffic_level=order["traffic_level"],
+            restaurant_busy_level=order["restaurant_busy_level"],
+            app_version=order["app_version"],
+        ),
+        delivery_neighborhood=order["delivery_neighborhood"],
+        main_dish=order["main_dish"],
+        quantity=order["quantity"],
+        order_price=order["order_price"],
+        total_price=order["total_price"],
+        status=order["status"],
+        order_time=order["order_time"],
+        updated_at=order["updated_at"],
+        payload=order["payload"],
     )

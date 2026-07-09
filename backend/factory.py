@@ -88,7 +88,7 @@ def create_app():
 
     app.config.from_object(Config)
 
-    from models import User
+    from models import TrainRecord, User
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -102,9 +102,8 @@ def create_app():
 
         return current_user
 
-    from controllers import user_controller, auth_controller, owner_controller
+    from controllers import auth_controller, owner_controller
 
-    app.register_blueprint(user_controller)
     app.register_blueprint(auth_controller)
     app.register_blueprint(owner_controller)
 

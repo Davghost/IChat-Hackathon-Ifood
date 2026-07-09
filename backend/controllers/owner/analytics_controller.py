@@ -72,8 +72,8 @@ def get_analytics_history():
         load_owner_orders(),
         start_date,
         end_date,
-        restaurant_id=query.restaurant_id,
-        menu_item_id=query.menu_item_id,
+        delivery_neighborhood=query.delivery_neighborhood,
+        main_dish=query.main_dish,
         status=query.status,
     )
 

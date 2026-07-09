@@ -1,4 +1,4 @@
 from .blueprint import owner_controller
-from . import analytics_controller, menus_controller, orders_controller, restaurants_controller
+from . import analytics_controller, orders_controller
 
 __all__ = ["owner_controller"]

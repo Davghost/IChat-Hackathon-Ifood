@@ -9,35 +9,6 @@ DEFAULT_ANALYTICS_DAYS = 30
 MAX_ANALYTICS_DAYS = 180
 DEFAULT_ORDERS_PER_PAGE = 20
 MAX_ORDERS_PER_PAGE = 100
-
-
-class RestaurantMessage(BaseModel):
-    name: str
-    description: str
-
-
-class RestaurantResponse(BaseModel):
-    id: int
-    name: str
-    description: str
-
-
-class MenuItemMessage(BaseModel):
-    title: str
-    name: str
-    price: float
-    description: str
-
-
-class MenuItemResponse(BaseModel):
-    id: int
-    title: str
-    name: str
-    price: float
-    description: str
-    restaurant_id: int
-
-
 class PaginationLinks(BaseModel):
     current: str
     first: str | None
@@ -56,8 +27,8 @@ class OrdersQuery(BaseModel):
     days: int = Field(default=DEFAULT_ANALYTICS_DAYS, ge=1, le=MAX_ANALYTICS_DAYS)
     start_date: date | None = None
     end_date: date | None = None
-    restaurant_id: int | None = None
-    menu_item_id: int | None = None
+    delivery_neighborhood: str | None = None
+    main_dish: str | None = None
     status: str | None = None
 
 
@@ -65,8 +36,8 @@ class AnalyticsHistoryQuery(BaseModel):
     days: int = Field(default=DEFAULT_ANALYTICS_DAYS, ge=1, le=MAX_ANALYTICS_DAYS)
     start_date: date | None = None
     end_date: date | None = None
-    restaurant_id: int | None = None
-    menu_item_id: int | None = None
+    delivery_neighborhood: str | None = None
+    main_dish: str | None = None
     status: str | None = None
 
 
@@ -75,33 +46,48 @@ class OrderStatusUpdateMessage(BaseModel):
 
 
 class OwnerOrderCustomerResponse(BaseModel):
-    id: int
-    username: str
-    email: str
-
-
-class OwnerOrderRestaurantResponse(BaseModel):
-    id: int
     name: str
+    email: str | None = None
 
 
-class OwnerOrderMenuItemResponse(BaseModel):
-    id: int
-    title: str
-    name: str
+class OwnerOrderCourierResponse(BaseModel):
+    name: str | None = None
+    vehicle: str | None = None
+
+
+class OwnerOrderLocationResponse(BaseModel):
+    lat: float | None = None
+    lng: float | None = None
+
+
+class OwnerOrderRouteResponse(BaseModel):
+    restaurant: OwnerOrderLocationResponse
+    customer: OwnerOrderLocationResponse
+
+
+class OwnerOrderContextResponse(BaseModel):
+    weather: str | None = None
+    traffic_level: str | None = None
+    restaurant_busy_level: str | None = None
+    app_version: str | None = None
 
 
 class OwnerOrderResponse(BaseModel):
     id: int
+    order_id: str
     customer: OwnerOrderCustomerResponse
-    restaurant: OwnerOrderRestaurantResponse
-    menu_item: OwnerOrderMenuItemResponse
+    courier: OwnerOrderCourierResponse
+    route: OwnerOrderRouteResponse
+    context: OwnerOrderContextResponse
+    delivery_neighborhood: str | None
+    main_dish: str
     quantity: int
-    unit_price: float
+    order_price: float
     total_price: float
     status: str
-    created_at: datetime
-    updated_at: datetime
+    order_time: datetime
+    updated_at: datetime | None
+    payload: dict
 
 
 class OrdersStatusCountResponse(BaseModel):
@@ -124,7 +110,6 @@ class OrdersPageResponse(BaseModel):
 
 
 class TopMenuItemMetricsResponse(BaseModel):
-    menu_item_id: int
     name: str
     quantity: int
     revenue: float

@@ -11,8 +11,10 @@ from .orders import (
     filter_orders,
     find_owner_order,
     load_owner_orders,
+    normalize_train_record,
     pagination_links,
     resolve_period,
+    set_train_order_status,
     status_counts,
     validate_status,
 )
@@ -60,8 +62,8 @@ def list_orders():
         load_owner_orders(),
         start_date,
         end_date,
-        restaurant_id=query.restaurant_id,
-        menu_item_id=query.menu_item_id,
+        delivery_neighborhood=query.delivery_neighborhood,
+        main_dish=query.main_dish,
         status=query.status,
     )
 
@@ -112,12 +114,13 @@ def update_order_status(order_id):
     if status_error:
         return status_error
 
-    # A busca considera order_id e owner_id para impedir manipulacao de pedidos de terceiros.
+    # A busca considera o registro importado na base local de train_records.
     order = find_owner_order(order_id)
     if not order:
         return {"msg": "Order not found"}, 404
 
-    # Persistimos o novo status e devolvemos o pedido atualizado no mesmo contrato da listagem.
-    order.status = data.status
+    # O status e armazenado dentro do payload do train_record, que agora e a fonte oficial dos pedidos.
+    set_train_order_status(order, data.status)
     db.session.commit()
-    return order_response(order).model_dump(mode="json"), 200
+    normalized_order = normalize_train_record(order)
+    return order_response(normalized_order).model_dump(mode="json"), 200

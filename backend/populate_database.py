@@ -1,56 +1,53 @@
-import os
-
-from factory import db
 from main import app
+from factory import db
 from models.user import User
-from sqlalchemy import select
 
 
-DEFAULT_ADMIN_EMAIL = "admin@hackathon.local"
-DEFAULT_ADMIN_PASSWORD = "admin123"
+USERNAME = "string"
+EMAIL = "string"
+PASSWORD = "string"
+ROLE = "owner"
 
-'''
-def populate_admin_user():
-    admin_email = os.getenv("ADMIN_EMAIL", DEFAULT_ADMIN_EMAIL)
-    admin_password = os.getenv("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
 
-    existing_user = db.session.scalars(
-        select(User).filter_by(email=admin_email)
+def create_user():
+
+    existing_user = User.query.filter(
+        (User.username == USERNAME) |
+        (User.email == EMAIL)
     ).first()
 
-    if existing_user is None:
-        existing_user = User(
-            username="admin",
-            email=admin_email,
-            role="admin"
-        )
-        db.session.add(existing_user)
 
-    existing_user.password = admin_password
-    db.session.commit()
-
-    print(f"Admin user ready: {admin_email}")
-''' 
+    if existing_user:
+        print("User already exists:")
+        print(existing_user)
+        return
 
 
-def populate_owner():
-    user= User(
-        username="string1",
-        email="string1",
-        role="owner"
+    user = User(
+        username=USERNAME,
+        email=EMAIL,
+        role=ROLE
     )
 
-    user.password = "string"
+    # gera o password_hash automaticamente
+    user.password = PASSWORD
+
 
     db.session.add(user)
     db.session.commit()
 
-    print(f"{user.role} created")
+
+    print("User created successfully!")
+    print(f"Username: {user.username}")
+    print(f"Email: {user.email}")
+    print(f"Role: {user.role}")
+
 
 
 if __name__ == "__main__":
+
     with app.app_context():
+
         db.create_all()
 
-        #populate_admin_user()
-        populate_owner()
+        create_user()

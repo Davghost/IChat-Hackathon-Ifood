@@ -1,8 +1,5 @@
 from factory import db
 from datetime import datetime, timezone
-from pydantic import BaseModel, ConfigDict
-from utils.response_schema import OrmBase, ResponseBase
-from typing import Optional
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -13,21 +10,7 @@ class User(db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     email = db.Column(db.String(128), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256))
-    role = db.Column(db.String(32), nullable=False, default="client")
-
-    menu_items = db.relationship(
-        "MenuItem",
-        back_populates="owner",
-        cascade="all, delete-orphan",
-        lazy=True,
-    )
-    restaurant = db.relationship(
-        "Restaurant",
-        back_populates="owner",
-        cascade="all, delete-orphan",
-        lazy=True,
-        uselist=False,
-    )
+    role = db.Column(db.String(32), nullable=False, default="owner")
 
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -44,10 +27,3 @@ class User(db.Model):
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"
-
-
-class UserResponse(OrmBase):
-    username: str
-    email: str
-    role: str
-    created_at: datetime
