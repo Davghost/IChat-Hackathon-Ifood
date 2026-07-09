@@ -204,10 +204,8 @@ def _order_response(order):
 )
 @jwt_required()
 def get_user():
-    """
-    Get logged user
-    """
-
+    # current_user ja foi resolvido pelo JWT loader durante a autenticacao.
+    # Aqui apenas serializamos o usuario autenticado para o contrato publico esperado.
     response = UserResponse.model_validate(current_user).to_response_dict()
 
     return response, 200
@@ -225,6 +223,8 @@ def get_user():
 )
 @jwt_required()
 def create_order():
+    # O cliente autenticado cria um pedido a partir de um item de menu existente.
+    # O schema de entrada garante menu_item_id valido e quantidade minima de 1.
     data = request.json
     menu_item = MenuItem.query.options(
         selectinload(MenuItem.restaurant)
@@ -232,9 +232,11 @@ def create_order():
     if not menu_item:
         return {"msg": "Menu item not found"}, 404
 
+    # O preco total e calculado no backend para evitar manipulacao do valor pelo cliente.
     quantity = int(data["quantity"])
     total_price = round(menu_item.price * quantity, 2)
 
+    # owner_id, restaurant_id e unit_price sao derivados do item consultado, nao do payload.
     order = Order(
         customer_id=current_user.id,
         owner_id=menu_item.owner_id,
@@ -247,6 +249,7 @@ def create_order():
     db.session.add(order)
     db.session.commit()
 
+    # Recarregamos o pedido com os relacionamentos necessarios para montar a resposta completa.
     order = Order.query.options(
         selectinload(Order.restaurant),
         selectinload(Order.menu_item),
@@ -266,6 +269,8 @@ def create_order():
 )
 @jwt_required()
 def list_restaurants_with_menus():
+    # A consulta lista restaurantes com seus itens de menu usando paginacao.
+    # O objeto query ja contem page e per_page validados.
     query = request.context.query
 
     pagination = Restaurant.query.options(
@@ -276,6 +281,7 @@ def list_restaurants_with_menus():
         error_out=False,
     )
 
+    # O contrato de resposta inclui metadados de pagina, links navegaveis e os restaurantes serializados.
     response = RestaurantsPageResponse(
         page=pagination.page,
         per_page=pagination.per_page,

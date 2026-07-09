@@ -6,14 +6,10 @@ from spectree import Response
 from spectree.models import ValidationError as SpectreeValidationError
 
 from utils.response_schema import GenericResponse
-from .common import (
-    MenuItemMessage,
-    MenuItemResponse,
-    get_owner_restaurant,
-    menu_item_response,
-    owner_controller,
-    owner_required,
-)
+from .access import get_owner_restaurant, owner_required
+from .blueprint import owner_controller
+from .schemas import MenuItemMessage, MenuItemResponse
+from .serializers import menu_item_response
 
 
 @owner_controller.post("/menus")
@@ -28,15 +24,20 @@ from .common import (
 )
 @jwt_required()
 def create_menu_item():
+    # Antes de criar um item, validamos que o token pertence a um owner.
+    # O endpoint nao aceita clientes comuns porque o cardapio e um recurso administrativo.
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
+    # O item sempre e criado vinculado ao restaurante atual do owner.
+    # Se ainda nao houver restaurante, a operacao nao faz sentido.
     data = request.context.json
     restaurant = get_owner_restaurant()
     if not restaurant:
         return {"msg": "Restaurant not found"}, 404
 
+    # owner_id e restaurant_id sao preenchidos no backend para evitar confianca em ids vindos do cliente.
     menu_item = MenuItem(
         title=data.title,
         name=data.name,
@@ -48,6 +49,7 @@ def create_menu_item():
     db.session.add(menu_item)
     db.session.commit()
 
+    # O retorno usa serializer proprio para manter o contrato publico uniforme.
     return menu_item_response(menu_item), 201
 
 
@@ -55,6 +57,8 @@ def create_menu_item():
 @api.validate(resp=Response(HTTP_200=list[MenuItemResponse], HTTP_404=GenericResponse), tags=["owner"])
 @jwt_required()
 def list_menu_items():
+    # A listagem e sempre filtrada pelo owner autenticado.
+    # Isso garante isolamento entre os cardapios de donos diferentes.
     auth_error = owner_required()
     if auth_error:
         return auth_error
@@ -75,6 +79,8 @@ def list_menu_items():
 )
 @jwt_required()
 def update_menu_item(menu_id):
+    # Atualizamos apenas itens pertencentes ao owner autenticado.
+    # O menu_id sozinho nao basta; a query valida tambem o owner_id.
     auth_error = owner_required()
     if auth_error:
         return auth_error
@@ -83,11 +89,13 @@ def update_menu_item(menu_id):
     if not menu_item:
         return {"msg": "Menu item not found"}, 404
 
+    # Reconfirmamos a existencia do restaurante do owner porque o item precisa continuar vinculado a ele.
     data = request.context.json
     restaurant = get_owner_restaurant()
     if not restaurant:
         return {"msg": "Restaurant not found"}, 404
 
+    # Todos os campos editaveis sao substituidos pelo payload validado.
     menu_item.title = data.title
     menu_item.name = data.name
     menu_item.price = float(data.price)
@@ -102,6 +110,8 @@ def update_menu_item(menu_id):
 @api.validate(resp=Response(HTTP_200=GenericResponse, HTTP_404=GenericResponse), tags=["owner"])
 @jwt_required()
 def delete_menu_item(menu_id):
+    # A exclusao segue a mesma regra de posse da atualizacao:
+    # so o dono do item pode remove-lo.
     auth_error = owner_required()
     if auth_error:
         return auth_error
@@ -110,6 +120,7 @@ def delete_menu_item(menu_id):
     if not menu_item:
         return {"msg": "Menu item not found"}, 404
 
+    # A transacao remove o item e responde com mensagem simples para o frontend.
     db.session.delete(menu_item)
     db.session.commit()
 

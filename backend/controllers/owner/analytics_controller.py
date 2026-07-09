@@ -4,27 +4,16 @@ from flask_jwt_extended import jwt_required
 from spectree import Response
 from spectree.models import ValidationError as SpectreeValidationError
 
-from utils.response_schema import GenericResponse
-from .common import (
+from .access import owner_required
+from .analytics import analytics_history_response, dashboard_response
+from .blueprint import owner_controller
+from .orders import filter_orders, load_owner_orders, resolve_period, validate_status
+from .schemas import (
     AnalyticsHistoryQuery,
     AnalyticsHistoryResponse,
-    AIPlaceholdersResponse,
     DEFAULT_ANALYTICS_DAYS,
     DashboardQuery,
     DashboardResponse,
-    ForecastQuery,
-    ForecastResponse,
-    analytics_history_response,
-    dashboard_response,
-    filter_orders,
-    find_owner_restaurant,
-    forecast_response,
-    load_owner_orders,
-    owner_ai_placeholders_response,
-    owner_controller,
-    owner_required,
-    resolve_period,
-    validate_status,
 )
 
 
@@ -39,11 +28,14 @@ from .common import (
 )
 @jwt_required()
 def get_dashboard():
+    # O dashboard resume o desempenho recente do owner sem expor dados de outros restaurantes.
+    # Toda a base do calculo vem dos pedidos associados ao usuario autenticado.
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
     query = request.context.query
+    # dashboard_response concentra a agregacao diaria, receita, ticket medio e top itens.
     response = dashboard_response(query.days, load_owner_orders())
     return response.model_dump(mode="json"), 200
 
@@ -59,11 +51,14 @@ def get_dashboard():
 )
 @jwt_required()
 def get_analytics_history():
+    # Este endpoint entrega historico analitico filtravel por periodo, status e itens.
+    # E uma visao mais detalhada que o dashboard, orientada a exploracao do frontend.
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
     query = request.context.query
+    # Validamos o status antes de montar a janela temporal para evitar combinacoes invalidas.
     status_error = validate_status(query.status)
     if status_error:
         return status_error
@@ -72,6 +67,7 @@ def get_analytics_history():
     if period_error:
         return period_error
 
+    # Os filtros sao aplicados apenas sobre pedidos do owner logado.
     orders = filter_orders(
         load_owner_orders(),
         start_date,
@@ -80,78 +76,7 @@ def get_analytics_history():
         menu_item_id=query.menu_item_id,
         status=query.status,
     )
+
+    # analytics_history_response transforma os pedidos filtrados em resumo e serie temporal.
     response = analytics_history_response(start_date, end_date, orders)
-    return response.model_dump(mode="json"), 200
-
-
-@owner_controller.get("/ai/placeholders")
-@api.validate(
-    query=AnalyticsHistoryQuery,
-    resp=Response(
-        HTTP_200=AIPlaceholdersResponse,
-        HTTP_400=SpectreeValidationError,
-        HTTP_404=GenericResponse,
-    ),
-    tags=["owner"],
-)
-@jwt_required()
-def get_ai_placeholders():
-    auth_error = owner_required()
-    if auth_error:
-        return auth_error
-
-    query = request.context.query
-    if query.restaurant_id is not None and not find_owner_restaurant(query.restaurant_id):
-        return {"msg": "Restaurant not found"}, 404
-
-    status_error = validate_status(query.status)
-    if status_error:
-        return status_error
-
-    start_date, end_date, period_error = resolve_period(query, DEFAULT_ANALYTICS_DAYS)
-    if period_error:
-        return period_error
-
-    orders = filter_orders(
-        load_owner_orders(),
-        start_date,
-        end_date,
-        restaurant_id=query.restaurant_id,
-        menu_item_id=query.menu_item_id,
-        status=query.status,
-    )
-    response = owner_ai_placeholders_response(
-        start_date,
-        end_date,
-        orders,
-        restaurant_id=query.restaurant_id,
-    )
-    return response.model_dump(mode="json"), 200
-
-
-@owner_controller.get("/forecasts")
-@api.validate(
-    query=ForecastQuery,
-    resp=Response(
-        HTTP_200=ForecastResponse,
-        HTTP_400=SpectreeValidationError,
-        HTTP_404=GenericResponse,
-    ),
-    tags=["owner"],
-)
-@jwt_required()
-def get_forecasts():
-    auth_error = owner_required()
-    if auth_error:
-        return auth_error
-
-    query = request.context.query
-    if query.restaurant_id is not None and not find_owner_restaurant(query.restaurant_id):
-        return {"msg": "Restaurant not found"}, 404
-
-    response = forecast_response(
-        query.days,
-        load_owner_orders(),
-        restaurant_id=query.restaurant_id,
-    )
     return response.model_dump(mode="json"), 200

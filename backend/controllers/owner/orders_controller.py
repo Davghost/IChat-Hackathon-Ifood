@@ -5,23 +5,25 @@ from spectree import Response
 from spectree.models import ValidationError as SpectreeValidationError
 
 from utils.response_schema import GenericResponse
-from .common import (
-    DEFAULT_ANALYTICS_DAYS,
-    OrderStatusUpdateMessage,
-    OwnerOrderResponse,
-    OrdersPageResponse,
-    OrdersQuery,
+from .access import owner_required
+from .blueprint import owner_controller
+from .orders import (
     filter_orders,
     find_owner_order,
     load_owner_orders,
-    order_response,
-    owner_controller,
-    owner_required,
     pagination_links,
     resolve_period,
     status_counts,
     validate_status,
 )
+from .schemas import (
+    DEFAULT_ANALYTICS_DAYS,
+    OrderStatusUpdateMessage,
+    OwnerOrderResponse,
+    OrdersPageResponse,
+    OrdersQuery,
+)
+from .serializers import order_response
 
 
 @owner_controller.get("/orders")
@@ -35,19 +37,25 @@ from .common import (
 )
 @jwt_required()
 def list_orders():
+    # Esta rota consolida consulta, filtro e paginacao dos pedidos do owner.
+    # Todas as operacoes partem do conjunto de pedidos pertencentes ao usuario autenticado.
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
+    # O objeto query ja chega validado pelo schema OrdersQuery.
+    # Isso inclui limites de pagina, janela de datas e filtros opcionais.
     query = request.context.query
     status_error = validate_status(query.status)
     if status_error:
         return status_error
 
+    # Resolve_period transforma a combinacao de days/start_date/end_date em uma janela coerente.
     start_date, end_date, period_error = resolve_period(query, DEFAULT_ANALYTICS_DAYS)
     if period_error:
         return period_error
 
+    # Carregamos os pedidos do owner com relacionamentos necessarios e aplicamos filtros em memoria.
     orders = filter_orders(
         load_owner_orders(),
         start_date,
@@ -57,6 +65,7 @@ def list_orders():
         status=query.status,
     )
 
+    # A paginacao e calculada manualmente porque os filtros atuais dependem do conjunto ja carregado.
     total = len(orders)
     pages = (total + query.per_page - 1) // query.per_page if total else 0
     page = query.page if pages == 0 else min(query.page, pages)
@@ -64,6 +73,7 @@ def list_orders():
     end_index = start_index + query.per_page
     paged_orders = orders[start_index:end_index]
 
+    # O payload final inclui links de navegacao, contadores por status e a lista serializada.
     response = OrdersPageResponse(
         page=page,
         per_page=query.per_page,
@@ -92,6 +102,7 @@ def list_orders():
 )
 @jwt_required()
 def update_order_status(order_id):
+    # A alteracao de status e uma acao administrativa do owner sobre um pedido que lhe pertence.
     auth_error = owner_required()
     if auth_error:
         return auth_error
@@ -101,10 +112,12 @@ def update_order_status(order_id):
     if status_error:
         return status_error
 
+    # A busca considera order_id e owner_id para impedir manipulacao de pedidos de terceiros.
     order = find_owner_order(order_id)
     if not order:
         return {"msg": "Order not found"}, 404
 
+    # Persistimos o novo status e devolvemos o pedido atualizado no mesmo contrato da listagem.
     order.status = data.status
     db.session.commit()
     return order_response(order).model_dump(mode="json"), 200

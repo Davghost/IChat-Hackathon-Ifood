@@ -13,7 +13,6 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     APP_TITLE = "Flask REST API Template"
-    AI_SERVICE_BASE_URL = os.environ.get("AI_SERVICE_BASE_URL", "http://localhost:8000")
 
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
     JWT_TOKEN_LOCATION = ["headers"]
