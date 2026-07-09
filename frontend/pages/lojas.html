@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lojas Owner</title>
+    <title>Recurso Indisponivel</title>
     <link rel="stylesheet" href="../style.css" />
   </head>
   <body>
@@ -21,7 +21,6 @@
           <a class="nav-item" href="homeowner.html">Resumo</a>
           <a class="nav-item" href="pedidos.html">Pedidos</a>
           <a class="nav-item" href="cardapio.html">Cardapio</a>
-          <a class="nav-item active" href="lojas.html">Lojas</a>
           <a class="nav-item" href="faturamento.html">Faturamento</a>
         </nav>
 
@@ -34,9 +33,9 @@
       <section class="workspace">
         <header class="topbar">
           <div>
-            <p class="page-kicker">Restaurante do owner</p>
-            <h1 class="page-title">Configuracao da unidade</h1>
-            <p class="page-subtitle">Cada owner agora pode ter apenas um restaurante. Esta tela cria ou edita essa unica unidade.</p>
+            <p class="page-kicker">Recurso removido</p>
+            <h1 class="page-title">Gestao de restaurante indisponivel</h1>
+            <p class="page-subtitle">O backend atual nao expoe controllers de restaurante. Esta pagina existe apenas para evitar links quebrados.</p>
           </div>
         </header>
 
@@ -45,41 +44,13 @@
         <section id="restaurantsPageContent" class="view-stack" hidden>
           <p id="pageAlert" class="alert alert-success">Carregando...</p>
 
-          <form id="restaurantForm" class="editor-panel">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Formulario</p>
-                <h2 id="restaurantFormTitle">Cadastrar restaurante</h2>
-              </div>
-            </div>
-
-            <div class="form-grid two-cols">
-              <label class="field">
-                <span>Nome</span>
-                <input id="restaurantName" type="text" required />
-              </label>
-              <label class="field">
-                <span>Descricao</span>
-                <input id="restaurantDescription" type="text" required />
-              </label>
-            </div>
-
-            <div class="form-actions">
-              <button id="restaurantCancelButton" class="button button-ghost" type="button">Limpar</button>
-              <button id="restaurantSaveButton" class="button button-primary" type="submit">Criar restaurante</button>
-            </div>
-          </form>
-
           <section class="restaurant-grid single-restaurant-grid">
             <article class="restaurant-card">
               <div class="restaurant-avatar">IF</div>
               <div id="restaurantDetailsCard">
-                <h3>Carregando restaurante</h3>
-                <p>Buscando a unidade vinculada ao owner.</p>
-                <small>Aguardando resposta do backend</small>
-              </div>
-              <div class="row-actions">
-                <button id="restaurantDeleteButton" class="button button-ghost small-button danger-text" type="button">Excluir</button>
+                <h3>Controller inexistente na API ativa</h3>
+                <p>Use as telas de pedidos, cardapio, faturamento e chat, que sao sustentadas pelos controllers atuais.</p>
+                <small>Nenhuma chamada de CRUD de restaurante sera feita aqui.</small>
               </div>
             </article>
           </section>

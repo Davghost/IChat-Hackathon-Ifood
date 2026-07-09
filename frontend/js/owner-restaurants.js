@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   hide(guestState)
 
   if (!Auth.isLoggedIn()) {
-    showState(guestState, 'Entre para administrar suas lojas.', 'Ir para login', 'login.html')
+    showState(guestState, 'Entre para acessar os recursos disponiveis do owner.', 'Ir para login', 'login.html')
     return
   }
 
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (user?.role !== 'owner') {
       showState(
         guestState,
-        'Somente contas owner podem acessar a gestao de lojas.',
+        'Somente contas owner podem acessar os recursos administrativos.',
         'Abrir area do cliente',
         'homeclient.html'
       )
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     show(content)
-    setAlert(error?.response?.data?.msg || 'Nao foi possivel carregar as lojas.', 'error')
+    setAlert(error?.response?.data?.msg || 'Nao foi possivel carregar esta pagina.', 'error')
   }
 
   function renderUnavailableState() {
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       detailsCard.innerHTML = `
         <div>
           <h3>Gestao de restaurante indisponivel</h3>
-          <p>O backend atual nao expoe mais as rotas /owner/restaurant nem /owner/menus.</p>
+          <p>O backend atual nao expoe controllers de restaurante.</p>
           <small>A tela foi ajustada para nao consumir endpoints removidos.</small>
         </div>
       `
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       saveButton.textContent = 'Indisponivel'
     }
 
-    setAlert('Rotas de restaurante removidas do backend. Esta tela nao faz mais chamadas inexistentes.', 'error')
+    setAlert('Nenhum controller de restaurante esta disponivel na API atual.', 'error')
   }
 
   function setAlert(message, type) {
