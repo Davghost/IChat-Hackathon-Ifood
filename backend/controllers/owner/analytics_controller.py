@@ -51,14 +51,13 @@ def get_dashboard():
 )
 @jwt_required()
 def get_analytics_history():
-    # Este endpoint entrega historico analitico filtravel por periodo, status e itens.
+    # Este endpoint entrega historico analitico filtravel por periodo, bairro e prato.
     # E uma visao mais detalhada que o dashboard, orientada a exploracao do frontend.
     auth_error = owner_required()
     if auth_error:
         return auth_error
 
     query = request.context.query
-    # Validamos o status antes de montar a janela temporal para evitar combinacoes invalidas.
     status_error = validate_status(query.status)
     if status_error:
         return status_error

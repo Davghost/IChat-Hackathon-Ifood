@@ -1,11 +1,11 @@
-from collections import Counter
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from flask import request, url_for
 from flask_jwt_extended import current_user
 
 from models.train_record import TrainRecord
-from .schemas import OrdersStatusCountResponse, PaginationLinks
+from .schemas import PaginationLinks
 
 
 APP_TIMEZONE = timezone(timedelta(hours=-3), name="America/Sao_Paulo")
@@ -21,18 +21,6 @@ ORDER_STATUSES = (
     ORDER_STATUS_DELIVERED,
     ORDER_STATUS_CANCELLED,
 )
-
-
-def validate_status(status):
-    if status is None:
-        return None
-    if status not in ORDER_STATUSES:
-        return {"msg": f"status must be one of: {', '.join(ORDER_STATUSES)}"}, 400
-    return None
-
-
-def find_owner_order(order_id):
-    return TrainRecord.query.filter_by(id=order_id, source_table="train").first()
 
 
 def localize_datetime(value):
@@ -61,8 +49,8 @@ def normalize_train_record(record):
         or payload.get("customer")
         or "Unknown customer"
     )
-    status = str(payload.get("status") or ORDER_STATUS_DELIVERED)
     updated_at = payload.get("updated_at") or record.imported_at
+    status = str(payload.get("status") or ORDER_STATUS_NEW)
 
     return {
         "id": record.id,
@@ -91,15 +79,6 @@ def normalize_train_record(record):
     }
 
 
-def set_train_order_status(record, status):
-    payload = dict(record.payload or {})
-    payload["status"] = status
-    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
-    record.payload = payload
-    record.payload_hash = TrainRecord.build_payload_hash(payload)
-    return record
-
-
 def resolve_period(query, default_days):
     today = datetime.now(APP_TIMEZONE).date()
     start_date = query.start_date
@@ -126,14 +105,32 @@ def order_in_period(order, start_date, end_date):
 
 def load_owner_orders():
     records = (
-        TrainRecord.query.filter_by(source_table="train")
+        TrainRecord.query.filter(TrainRecord.source_table.in_(("train", "owner_orders")))
         .order_by(TrainRecord.imported_at.desc(), TrainRecord.id.desc())
         .all()
     )
-    return [normalize_train_record(record) for record in records]
+    visible_records = []
+    for record in records:
+        payload = record.payload or {}
+        payload_owner_id = payload.get("owner_id")
+        if (
+            record.source_table == "owner_orders"
+            and payload_owner_id is not None
+            and payload_owner_id != current_user.id
+        ):
+            continue
+        visible_records.append(record)
+    return [normalize_train_record(record) for record in visible_records]
 
 
-def filter_orders(orders, start_date, end_date, delivery_neighborhood=None, main_dish=None, status=None):
+def filter_orders(
+    orders,
+    start_date,
+    end_date,
+    delivery_neighborhood=None,
+    main_dish=None,
+    status=None,
+):
     filtered = []
     for order in orders:
         if not order_in_period(order, start_date, end_date):
@@ -170,9 +167,75 @@ def pagination_links(endpoint, page, pages, per_page):
     )
 
 
+def validate_status(status):
+    if status is not None and status not in ORDER_STATUSES:
+        return {
+            "msg": (
+                "status must be one of: "
+                + ", ".join(ORDER_STATUSES)
+            )
+        }, 400
+    return None
+
+
 def status_counts(orders):
-    counts = Counter(order["status"] for order in orders)
+    counts = {status: 0 for status in ORDER_STATUSES}
+    for order in orders:
+        order_status = order.get("status")
+        if order_status in counts:
+            counts[order_status] += 1
     return [
-        OrdersStatusCountResponse(status=status, count=counts.get(status, 0))
+        {"status": status, "count": counts[status]}
         for status in ORDER_STATUSES
     ]
+
+
+def find_owner_order(order_id):
+    record = TrainRecord.query.filter(
+        TrainRecord.id == order_id,
+        TrainRecord.source_table.in_(("train", "owner_orders")),
+    ).first()
+    if not record:
+        return None
+
+    payload = record.payload or {}
+    payload_owner_id = payload.get("owner_id")
+    if (
+        record.source_table == "owner_orders"
+        and payload_owner_id is not None
+        and payload_owner_id != current_user.id
+    ):
+        return None
+    return record
+
+
+def set_train_order_status(record, status):
+    payload = dict(record.payload or {})
+    payload["status"] = status
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    record.payload = payload
+    record.payload_hash = TrainRecord.build_payload_hash(payload)
+
+
+def build_owner_order_payload(
+    menu_item,
+    quantity,
+    customer_first_name=None,
+    delivery_neighborhood=None,
+    owner_id=None,
+):
+    now = datetime.now(timezone.utc)
+    cleaned_customer_name = (customer_first_name or "").strip() or "Cliente"
+    cleaned_neighborhood = (delivery_neighborhood or "").strip() or None
+
+    return {
+        "owner_id": owner_id,
+        "order_id": f"OWN-{uuid4().hex[:10].upper()}",
+        "order_time": now.isoformat(),
+        "main_dish": menu_item.name,
+        "order_price": round(float(menu_item.price), 2),
+        "quantity": quantity,
+        "status": ORDER_STATUS_NEW,
+        "delivery_neighborhood": cleaned_neighborhood,
+        "customer_first_name": cleaned_customer_name,
+    }

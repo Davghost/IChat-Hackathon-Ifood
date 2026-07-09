@@ -134,20 +134,20 @@ createApp({
       errorMessage.value = ''
 
       try {
-        const [userResponse, restaurantsResponse, menusResponse] = await Promise.all([
-          api.get('/users/me'),
-          api.get('/owner/restaurant').catch((error) => {
-            if (error?.response?.status === 404) {
-              return { data: null }
-            }
-            throw error
-          }),
-          api.get('/owner/menus')
+        const [currentUser, ordersResponse] = await Promise.all([
+          App.getCurrentUser(true),
+          api.get('/owner/orders?page=1&per_page=10&days=7')
         ])
 
-        user.value = userResponse.data
-        restaurants.value = restaurantsResponse.data ? [restaurantsResponse.data] : []
-        menuItems.value = menusResponse.data
+        user.value = currentUser
+        restaurants.value = []
+        menuItems.value = (ordersResponse.data?.orders || []).map((order) => ({
+          id: order.id,
+          name: order.main_dish,
+          price: order.total_price,
+          restaurant_id: null
+        }))
+        showSuccess('Painel sincronizado com as rotas atuais do backend.')
       } catch (error) {
         handleRequestError(error, 'Nao foi possivel carregar o painel.')
       } finally {
@@ -160,25 +160,10 @@ createApp({
       saving.value = true
       clearMessages()
 
-      const payload = {
-        name: restaurantForm.value.name,
-        description: restaurantForm.value.description
-      }
-
       try {
-        if (restaurantForm.value.id) {
-          const response = await api.put('/owner/restaurant', payload)
-          restaurants.value = [response.data]
-          showSuccess('Loja atualizada.')
-        } else {
-          const response = await api.post('/owner/restaurant', payload)
-          restaurants.value = [response.data]
-          showSuccess('Loja criada.')
-        }
-
-        resetRestaurantForm()
+        throw new Error('disabled-route')
       } catch (error) {
-        handleRequestError(error, 'Nao foi possivel salvar a loja.')
+        errorMessage.value = 'A API atual nao possui mais CRUD de restaurante.'
       } finally {
         saving.value = false
         refreshIcons()
@@ -193,12 +178,9 @@ createApp({
       clearMessages()
 
       try {
-        await api.delete('/owner/restaurant')
-        restaurants.value = []
-        menuItems.value = []
-        showSuccess('Loja excluida.')
+        throw new Error('disabled-route')
       } catch (error) {
-        handleRequestError(error, 'Nao foi possivel excluir a loja.')
+        errorMessage.value = 'A API atual nao possui mais CRUD de restaurante.'
       }
     }
 
@@ -206,29 +188,10 @@ createApp({
       saving.value = true
       clearMessages()
 
-      const payload = {
-        title: menuForm.value.title,
-        name: menuForm.value.name,
-        price: Number(menuForm.value.price),
-        description: menuForm.value.description
-      }
-
       try {
-        if (menuForm.value.id) {
-          const response = await api.put(`/owner/menus/${menuForm.value.id}`, payload)
-          menuItems.value = menuItems.value.map((item) =>
-            item.id === response.data.id ? response.data : item
-          )
-          showSuccess('Item atualizado.')
-        } else {
-          const response = await api.post('/owner/menus', payload)
-          menuItems.value = [...menuItems.value, response.data]
-          showSuccess('Item criado.')
-        }
-
-        resetMenuForm()
+        throw new Error('disabled-route')
       } catch (error) {
-        handleRequestError(error, 'Nao foi possivel salvar o item.')
+        errorMessage.value = 'A API atual nao possui mais CRUD de cardapio.'
       } finally {
         saving.value = false
         refreshIcons()
@@ -243,11 +206,9 @@ createApp({
       clearMessages()
 
       try {
-        await api.delete(`/owner/menus/${id}`)
-        menuItems.value = menuItems.value.filter((item) => item.id !== id)
-        showSuccess('Item excluido.')
+        throw new Error('disabled-route')
       } catch (error) {
-        handleRequestError(error, 'Nao foi possivel excluir o item.')
+        errorMessage.value = 'A API atual nao possui mais CRUD de cardapio.'
       }
     }
 

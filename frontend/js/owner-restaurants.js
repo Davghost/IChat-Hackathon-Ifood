@@ -13,16 +13,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const detailsCard = document.getElementById('restaurantDetailsCard')
   const deleteButton = document.getElementById('restaurantDeleteButton')
 
-  let restaurant = null
-  let menus = []
-
   logoutButton?.addEventListener('click', () => {
     App.logout()
     location.href = 'login.html'
   })
 
-  cancelButton?.addEventListener('click', fillForm)
-  deleteButton?.addEventListener('click', removeRestaurant)
+  cancelButton?.addEventListener('click', () => form?.reset())
 
   hide(content)
   hide(guestState)
@@ -47,8 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     show(content)
-    form?.addEventListener('submit', onSubmit)
-    await loadData()
+    renderUnavailableState()
   } catch (error) {
     if (error?.response?.status === 401 || error?.response?.status === 422) {
       App.logout()
@@ -60,111 +55,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     setAlert(error?.response?.data?.msg || 'Nao foi possivel carregar as lojas.', 'error')
   }
 
-  async function loadData() {
-    setAlert('Carregando restaurante...', 'success')
-    const [restaurantResponse, menusResponse] = await Promise.all([
-      api.get('/owner/restaurant').catch((error) => {
-        if (error?.response?.status === 404) {
-          return { data: null }
-        }
-        throw error
-      }),
-      api.get('/owner/menus')
-    ])
-
-    restaurant = restaurantResponse.data || null
-    menus = menusResponse.data || []
-    fillForm()
-    renderDetails()
-    setAlert('Restaurante conectado ao backend.', 'success')
-  }
-
-  function renderDetails() {
-    if (!detailsCard) {
-      return
-    }
-
-    if (!restaurant) {
+  function renderUnavailableState() {
+    if (detailsCard) {
       detailsCard.innerHTML = `
         <div>
-          <h3>Nenhum restaurante cadastrado</h3>
-          <p>Cadastre o restaurante do owner. A partir dessa regra, cada owner pode ter apenas uma unidade.</p>
-          <small>${menus.length} item(ns) de cardapio sem restaurante nao sao permitidos.</small>
+          <h3>Gestao de restaurante indisponivel</h3>
+          <p>O backend atual nao expoe mais as rotas /owner/restaurant nem /owner/menus.</p>
+          <small>A tela foi ajustada para nao consumir endpoints removidos.</small>
         </div>
       `
+    }
+
+    if (deleteButton) {
       deleteButton.hidden = true
-      return
+      deleteButton.disabled = true
     }
 
-    detailsCard.innerHTML = `
-        <div>
-          <h3>${App.escapeHtml(restaurant.name)}</h3>
-          <p>${App.escapeHtml(restaurant.description)}</p>
-          <small>${countItems()} item(ns) vinculados</small>
-        </div>
-    `
-    deleteButton.hidden = false
-  }
-
-  function countItems() {
-    return restaurant ? menus.filter((item) => item.restaurant_id === restaurant.id).length : 0
-  }
-
-  async function removeRestaurant() {
-    if (!restaurant || !confirm('Excluir o restaurante do owner?')) {
-      return
+    if (formTitle) {
+      formTitle.textContent = 'Gestao indisponivel'
     }
 
-    try {
-      await api.delete('/owner/restaurant')
-      restaurant = null
-      menus = []
-      fillForm()
-      renderDetails()
-      setAlert('Restaurante removido.', 'success')
-    } catch (error) {
-      setAlert(error?.response?.data?.msg || 'Nao foi possivel excluir o restaurante.', 'error')
-    }
-  }
-
-  async function onSubmit(event) {
-    event.preventDefault()
-
-    const payload = {
-      name: nameInput.value.trim(),
-      description: descriptionInput.value.trim()
-    }
-
-    try {
-      if (restaurant) {
-        const response = await api.put('/owner/restaurant', payload)
-        restaurant = response.data
-        setAlert('Restaurante atualizado.', 'success')
-      } else {
-        const response = await api.post('/owner/restaurant', payload)
-        restaurant = response.data
-        setAlert('Restaurante criado.', 'success')
+    ;[nameInput, descriptionInput].forEach((input) => {
+      if (input) {
+        input.disabled = true
       }
+    })
 
-      fillForm()
-      renderDetails()
-    } catch (error) {
-      setAlert(error?.response?.data?.msg || 'Nao foi possivel salvar o restaurante.', 'error')
-    }
-  }
-
-  function fillForm() {
-    if (!restaurant) {
-      form?.reset()
-      formTitle.textContent = 'Cadastrar restaurante'
-      saveButton.textContent = 'Criar restaurante'
-      return
+    if (saveButton) {
+      saveButton.disabled = true
+      saveButton.textContent = 'Indisponivel'
     }
 
-    formTitle.textContent = 'Editar restaurante'
-    saveButton.textContent = 'Salvar restaurante'
-    nameInput.value = restaurant.name
-    descriptionInput.value = restaurant.description
+    setAlert('Rotas de restaurante removidas do backend. Esta tela nao faz mais chamadas inexistentes.', 'error')
   }
 
   function setAlert(message, type) {

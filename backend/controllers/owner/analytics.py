@@ -3,10 +3,6 @@ from datetime import datetime, timedelta
 
 from .orders import (
     APP_TIMEZONE,
-    ORDER_STATUS_DELIVERED,
-    ORDER_STATUS_NEW,
-    ORDER_STATUS_PREPARING,
-    ORDER_STATUS_READY,
     localize_datetime,
 )
 from .schemas import (
@@ -138,14 +134,6 @@ def dashboard_response(days, orders):
 
     revenue_today = round(sum(order["total_price"] for order in today_orders), 2)
     items_sold_today = sum(order["quantity"] for order in today_orders)
-    pending_orders_today = sum(
-        1
-        for order in today_orders
-        if order["status"] in (ORDER_STATUS_NEW, ORDER_STATUS_PREPARING, ORDER_STATUS_READY)
-    )
-    completed_orders_today = sum(
-        1 for order in today_orders if order["status"] == ORDER_STATUS_DELIVERED
-    )
 
     return DashboardResponse(
         period_days=days,
@@ -156,8 +144,6 @@ def dashboard_response(days, orders):
             revenue_today=revenue_today,
             items_sold_today=items_sold_today,
             average_ticket_today=round(revenue_today / len(today_orders), 2) if today_orders else 0.0,
-            pending_orders_today=pending_orders_today,
-            completed_orders_today=completed_orders_today,
             most_ordered_item=top_menu_item_metrics(today_top_items),
         ),
         charts=DashboardChartsResponse(

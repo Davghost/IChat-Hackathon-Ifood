@@ -36,12 +36,12 @@
             <p class="page-kicker">Gestao de menu</p>
             <h1 class="page-title">Cadastro de itens</h1>
           </div>
-          <div class="topbar-actions">
-            <a class="button button-ghost" href="lojas.html">Editar restaurante</a>
-          </div>
         </header>
 
+        <section id="pageAccessState" class="guest-state" hidden></section>
+
         <section id="menuPageContent" class="view-stack" hidden>
+          <p id="pageAlert" class="alert alert-success">Carregando...</p>
 
           <form id="menuForm" class="editor-panel">
             <div class="panel-header">
@@ -51,11 +51,7 @@
               </div>
             </div>
 
-            <div class="form-grid">
-              <label class="field">
-                <span>Titulo</span>
-                <input id="menuTitle" type="text" required />
-              </label>
+            <div class="form-grid two-cols">
               <label class="field">
                 <span>Nome</span>
                 <input id="menuName" type="text" required />
@@ -63,14 +59,6 @@
               <label class="field">
                 <span>Preco</span>
                 <input id="menuPrice" type="number" min="0" step="0.01" required />
-              </label>
-              <label class="field">
-                <span>Restaurante</span>
-                <div id="restaurantBadge" class="input-badge">Carregando restaurante</div>
-              </label>
-              <label class="field field-wide">
-                <span>Descricao</span>
-                <textarea id="menuDescription" rows="3" required></textarea>
               </label>
             </div>
 
@@ -83,7 +71,7 @@
           <section class="table-panel">
             <div class="table-row table-head">
               <span>Item</span>
-              <span>Titulo</span>
+              <span>Cadastrado em</span>
               <span>Preco</span>
               <span>Acoes</span>
             </div>

@@ -65,8 +65,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? orders.map((order) => `
           <article class="order-row">
             <div>
-              <strong>${App.escapeHtml(order.customer.username)}</strong>
-              <span>${App.escapeHtml(order.menu_item.name)} · ${App.escapeHtml(order.restaurant.name)}</span>
+              <strong>${App.escapeHtml(order.customer?.name || 'Cliente')}</strong>
+              <span>${App.escapeHtml(order.main_dish || 'Item sem nome')}</span>
             </div>
             <div class="order-meta">
               <span class="status-pill ${App.statusClass(order.status)}">${App.statusLabel(order.status)}</span>

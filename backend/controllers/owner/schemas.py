@@ -9,6 +9,8 @@ DEFAULT_ANALYTICS_DAYS = 30
 MAX_ANALYTICS_DAYS = 180
 DEFAULT_ORDERS_PER_PAGE = 20
 MAX_ORDERS_PER_PAGE = 100
+
+
 class PaginationLinks(BaseModel):
     current: str
     first: str | None
@@ -39,6 +41,25 @@ class AnalyticsHistoryQuery(BaseModel):
     delivery_neighborhood: str | None = None
     main_dish: str | None = None
     status: str | None = None
+
+
+class MenuItemCreateMessage(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    price: float = Field(gt=0)
+
+
+class MenuItemResponse(BaseModel):
+    id: int
+    name: str
+    price: float
+    created_at: datetime
+
+
+class CreateOwnerOrderMessage(BaseModel):
+    menu_item_id: int
+    quantity: int = Field(default=1, ge=1)
+    customer_first_name: str | None = Field(default=None, max_length=120)
+    delivery_neighborhood: str | None = Field(default=None, max_length=120)
 
 
 class OrderStatusUpdateMessage(BaseModel):
@@ -121,8 +142,6 @@ class DashboardSummaryResponse(BaseModel):
     revenue_today: float
     items_sold_today: int
     average_ticket_today: float
-    pending_orders_today: int
-    completed_orders_today: int
     most_ordered_item: TopMenuItemMetricsResponse | None
 
 

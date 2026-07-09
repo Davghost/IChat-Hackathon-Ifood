@@ -8,8 +8,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const revenueBars = document.getElementById('revenueBars')
   const financeList = document.getElementById('financeList')
   const forecastList = document.getElementById('forecastList')
-  const aiMetrics = document.getElementById('aiMetrics')
-  const aiInsights = document.getElementById('aiInsights')
 
   logoutButton?.addEventListener('click', () => {
     App.logout()
@@ -20,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   hide(guestState)
 
   if (!Auth.isLoggedIn()) {
-    showState(guestState, 'Entre para ver faturamento, previsoes e metricas.', 'Ir para login', 'login.html')
+    showState(guestState, 'Entre para ver faturamento e previsoes.', 'Ir para login', 'login.html')
     return
   }
 
@@ -54,20 +52,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadAnalytics() {
     setAlert('Carregando analytics...', 'success')
 
-    const [historyResponse, forecastResponse, aiPlaceholderResponse] = await Promise.all([
-      api.get('/owner/analytics/history?days=30'),
-      api.get('/owner/forecasts?days=7'),
-      api.get('/owner/ai/placeholders?days=30')
-    ])
-
+    const historyResponse = await api.get('/owner/analytics/history?days=30')
     const history = historyResponse.data || {}
     const summary = history.summary || {}
     const charts = history.charts || []
-    const forecasts = forecastResponse.data?.forecasts || []
-    const placeholderPayload = aiPlaceholderResponse.data || {}
-    const placeholderMetrics = placeholderPayload.metrics || []
-    const placeholderInsights = placeholderPayload.insights || []
-    const placeholderNote = placeholderPayload.placeholder_note || 'PLACEHOLDER'
+    const forecasts = buildForecasts(charts)
 
     revenueValue.textContent = App.formatCurrency(summary.total_revenue)
     revenueBars.innerHTML = renderRevenueBars(charts)
@@ -89,40 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('')
       : '<p class="empty-cart">Sem previsao disponivel.</p>'
 
-    assistantTemplates.innerHTML = templates.map((item) => `
-      <button class="template-chip" type="button" data-question="${App.escapeHtml(item.question)}">
-        ${App.escapeHtml(item.question)}
-      </button>
-    `).join('')
-
-    assistantTemplates.querySelectorAll('[data-question]').forEach((button) => {
-      button.addEventListener('click', () => {
-        assistantQuestion.value = button.dataset.question
-      })
-    })
-
-    setAlert('Faturamento, previsoes e perguntas prontas carregados.', 'success')
-  }
-
-  async function submitQuestion() {
-    const question = assistantQuestion.value.trim()
-    if (!question) {
-      setAlert('Digite uma pergunta para o assistente.', 'error')
-      return
-    }
-
-    setAlert('Consultando assistente...', 'success')
-
-    try {
-      const response = await api.post('/owner/assistant/chat', { question })
-      const answer = response.data || {}
-      assistantAnswer.innerHTML = `
-        <strong>${App.escapeHtml(answer.answer || '')}</strong>
-      `
-      setAlert('Resposta recebida.', 'success')
-    } catch (error) {
-      setAlert(error?.response?.data?.msg || 'Nao foi possivel consultar o assistente.', 'error')
-    }
+    setAlert('Faturamento e historico carregados com a API atual.', 'success')
   }
 
   function setAlert(message, type) {
@@ -134,6 +90,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     alertBox.textContent = message
   }
 })
+
+function buildForecasts(points) {
+  if (!points.length) {
+    return []
+  }
+
+  const recentPoints = points.slice(-7)
+  const totalRevenue = recentPoints.reduce((sum, point) => sum + Number(point.revenue || 0), 0)
+  const totalOrders = recentPoints.reduce((sum, point) => sum + Number(point.orders || 0), 0)
+  const totalItems = recentPoints.reduce((sum, point) => sum + Number(point.items_sold || 0), 0)
+  const baseDate = new Date(`${recentPoints[recentPoints.length - 1].date}T00:00:00`)
+  const averageRevenue = totalRevenue / recentPoints.length
+  const averageOrders = totalOrders / recentPoints.length
+  const averageItems = totalItems / recentPoints.length
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const nextDate = new Date(baseDate)
+    nextDate.setDate(baseDate.getDate() + index + 1)
+
+    return {
+      date: nextDate.toLocaleDateString('pt-BR'),
+      predicted_revenue: Number(averageRevenue.toFixed(2)),
+      predicted_orders: Math.round(averageOrders),
+      predicted_items_sold: Math.round(averageItems)
+    }
+  })
+}
 
 function renderRevenueBars(points) {
   if (!points.length) {

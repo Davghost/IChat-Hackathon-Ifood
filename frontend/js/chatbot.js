@@ -1,76 +1,104 @@
-const chatInput = document.getElementById("chatInput");
-const sendButton = document.getElementById("sendMessage");
-const chatBody = document.getElementById("chatBody");
+document.addEventListener('DOMContentLoaded', () => {
+  const chatButton = document.getElementById('chatButton')
+  const chatOverlay = document.getElementById('chatOverlay')
+  const chatClose = document.querySelector('.chat-close')
+  const chatInput = document.getElementById('chatInput')
+  const sendButton = document.getElementById('sendMessage')
+  const chatBody = document.getElementById('chatBody')
 
-document.addEventListener("DOMContentLoaded", () => {
+  if (!chatButton || !chatOverlay || !chatInput || !sendButton || !chatBody) {
+    return
+  }
 
-    const chatButton = document.getElementById("chatButton");
-    const chatOverlay = document.getElementById("chatOverlay");
-    const chatClose = document.querySelector(".chat-close");
+  const initialMarkup = chatBody.innerHTML
 
-    if (!chatButton || !chatOverlay) return;
+  chatButton.addEventListener('click', () => {
+    chatOverlay.classList.add('active')
+  })
 
-    chatButton.addEventListener("click", () => {
-        chatOverlay.classList.add("active");
-    });
+  chatClose?.addEventListener('click', closeChat)
 
-    if (chatClose) {
-        chatClose.addEventListener("click", () => {
-            chatOverlay.classList.remove("active");
-            chatBody.innerHTML = `
-        <div class="message bot">
-             Olá! 👋<br> Como posso ajudar você hoje?
-        </div>
-    `
-           
-        });
-        
+  chatOverlay.addEventListener('click', (event) => {
+    if (event.target === chatOverlay) {
+      closeChat()
+    }
+  })
+
+  sendButton.addEventListener('click', sendMessage)
+  chatInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      sendMessage()
+    }
+  })
+
+  function closeChat() {
+    chatOverlay.classList.remove('active')
+    chatBody.innerHTML = initialMarkup
+  }
+
+  async function sendMessage() {
+    const text = chatInput.value.trim()
+    if (!text) {
+      return
     }
 
-    chatOverlay.addEventListener("click", (event) => {
-        if (event.target === chatOverlay) {
-            chatOverlay.classList.remove("active");
-        }
-    });
+    appendMessage('user', text)
+    chatInput.value = ''
+    setPending(true)
+    const loadingNode = appendMessage('bot', 'Consultando assistente...')
 
-});
+    try {
+      const response = await api.post('/owner/chat', { message: text })
+      loadingNode.textContent = normalizeChatReply(response.data?.chatbot_response)
+    } catch (error) {
+      loadingNode.textContent = error?.response?.data?.msg || 'Nao foi possivel consultar o assistente.'
+    } finally {
+      setPending(false)
+      chatBody.scrollTop = chatBody.scrollHeight
+    }
+  }
 
-function sendMessage() {
+  function appendMessage(role, text) {
+    const node = document.createElement('div')
+    node.className = `message ${role}`
+    node.textContent = text
+    chatBody.appendChild(node)
+    chatBody.scrollTop = chatBody.scrollHeight
+    return node
+  }
 
-    const text = chatInput.value.trim();
-
-    if (text === "") return;
-
-    chatBody.innerHTML += `
-        <div class="message user">
-            ${text}
-        </div>
-    `;
-
-    chatInput.value = "";
-
-    setTimeout(() => {
-
-        chatBody.innerHTML += `
-            <div class="message bot">
-                Recebi sua mensagem: "${text}"
-            </div>
-        `;
-
-        chatBody.scrollTop = chatBody.scrollHeight;
-
-    }, 500);
-
-}
-
-sendButton.addEventListener("click", sendMessage);
-
-chatInput.addEventListener("keypress", function(e){
-
-    if(e.key === "Enter"){
-
-        sendMessage();
-
+  function normalizeChatReply(payload) {
+    if (typeof payload === 'string') {
+      return payload
     }
 
-});
+    if (Array.isArray(payload)) {
+      return payload.map(formatReplyEntry).join('\n')
+    }
+
+    if (payload && typeof payload === 'object') {
+      if (typeof payload.answer === 'string') {
+        return payload.answer
+      }
+      if (typeof payload.response === 'string') {
+        return payload.response
+      }
+      return JSON.stringify(payload, null, 2)
+    }
+
+    return 'Assistente respondeu sem conteudo.'
+  }
+
+  function formatReplyEntry(entry) {
+    if (typeof entry === 'string') {
+      return entry
+    }
+    return JSON.stringify(entry)
+  }
+
+  function setPending(isPending) {
+    chatInput.disabled = isPending
+    sendButton.disabled = isPending
+  }
+})

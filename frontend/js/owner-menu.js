@@ -5,17 +5,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const userBadge = document.getElementById('sidebarUserBadge')
   const logoutButton = document.getElementById('logoutButton')
   const form = document.getElementById('menuForm')
-  const titleInput = document.getElementById('menuTitle')
   const nameInput = document.getElementById('menuName')
   const priceInput = document.getElementById('menuPrice')
-  const descriptionInput = document.getElementById('menuDescription')
-  const restaurantBadge = document.getElementById('restaurantBadge')
   const formTitle = document.getElementById('menuFormTitle')
   const saveButton = document.getElementById('menuSaveButton')
   const cancelButton = document.getElementById('menuCancelButton')
   const tableBody = document.getElementById('menuTableBody')
 
-  let restaurant = null
   let items = []
   let editingId = null
 
@@ -44,8 +40,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     show(content)
-    await loadData()
     form?.addEventListener('submit', onSubmit)
+    await loadData()
   } catch (error) {
     if (error?.response?.status === 401 || error?.response?.status === 422) {
       App.logout()
@@ -58,38 +54,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadData() {
-    setAlert('Carregando restaurante e itens...', 'success')
-    const [restaurantResponse, itemsResponse] = await Promise.all([
-      api.get('/owner/restaurant').catch((error) => {
-        if (error?.response?.status === 404) {
-          return { data: null }
-        }
-        throw error
-      }),
-      api.get('/owner/menus')
-    ])
-
-    restaurant = restaurantResponse.data || null
-    items = itemsResponse.data || []
-
-    renderRestaurantBadge()
+    setAlert('Carregando cardapio...', 'success')
+    const response = await api.get('/owner/menu-items')
+    items = response.data || []
     renderItems()
-
-    if (!restaurant) {
-      setAlert('Cadastre o restaurante primeiro. Cada owner agora pode ter apenas uma unidade.', 'error')
-      saveButton.disabled = true
-    } else {
-      saveButton.disabled = false
-      setAlert('Cardapio conectado ao backend.', 'success')
-    }
-  }
-
-  function renderRestaurantBadge() {
-    if (!restaurantBadge) {
-      return
-    }
-
-    restaurantBadge.textContent = restaurant ? restaurant.name : 'Nenhum restaurante cadastrado'
+    setAlert('Cardapio carregado com a API atual.', 'success')
   }
 
   function renderItems() {
@@ -102,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="table-row">
           <div>
             <strong>Nenhum item cadastrado</strong>
-            <small>Use o formulario acima para criar o primeiro item.</small>
+            <small>Crie o primeiro prato usando o formulario acima.</small>
           </div>
           <span>-</span>
           <span>-</span>
@@ -116,9 +85,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div class="table-row">
         <div>
           <strong>${App.escapeHtml(item.name)}</strong>
-          <small>${App.escapeHtml(item.description)}</small>
+          <small>ID ${item.id}</small>
         </div>
-        <span>${App.escapeHtml(item.title)}</span>
+        <span>${App.formatDateTime(item.created_at)}</span>
         <span>${App.formatCurrency(item.price)}</span>
         <div class="row-actions">
           <button class="button button-ghost small-button" type="button" data-edit="${item.id}">Editar</button>
@@ -144,10 +113,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     editingId = id
     formTitle.textContent = 'Editar item'
-    titleInput.value = item.title
     nameInput.value = item.name
     priceInput.value = item.price
-    descriptionInput.value = item.description
     saveButton.textContent = 'Salvar item'
   }
 
@@ -157,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      await api.delete(`/owner/menus/${id}`)
+      await api.delete(`/owner/menu-items/${id}`)
       items = items.filter((item) => item.id !== id)
       renderItems()
       if (editingId === id) {
@@ -172,25 +139,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function onSubmit(event) {
     event.preventDefault()
 
-    if (!restaurant) {
-      setAlert('Cadastre o restaurante antes de salvar itens.', 'error')
-      return
-    }
-
     const payload = {
-      title: titleInput.value.trim(),
       name: nameInput.value.trim(),
-      price: Number(priceInput.value),
-      description: descriptionInput.value.trim()
+      price: Number(priceInput.value)
     }
 
     try {
       if (editingId) {
-        const response = await api.put(`/owner/menus/${editingId}`, payload)
+        const response = await api.put(`/owner/menu-items/${editingId}`, payload)
         items = items.map((item) => item.id === editingId ? response.data : item)
         setAlert('Item atualizado.', 'success')
       } else {
-        const response = await api.post('/owner/menus', payload)
+        const response = await api.post('/owner/menu-items', payload)
         items = [response.data, ...items]
         setAlert('Item criado.', 'success')
       }
@@ -207,7 +167,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     form?.reset()
     formTitle.textContent = 'Novo item'
     saveButton.textContent = 'Criar item'
-    renderRestaurantBadge()
   }
 
   function setAlert(message, type) {

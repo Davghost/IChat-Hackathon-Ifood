@@ -18,6 +18,41 @@ const App = (() => {
     cancelled: 'status-cancelled'
   }
 
+  function decodeBase64Url(value) {
+    const normalized = String(value || '')
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+    const padding = normalized.length % 4
+    const padded = padding ? normalized + '='.repeat(4 - padding) : normalized
+    return atob(padded)
+  }
+
+  function parseTokenPayload(token) {
+    const parts = String(token || '').split('.')
+    if (parts.length < 2) {
+      return null
+    }
+
+    try {
+      return JSON.parse(decodeURIComponent(escape(decodeBase64Url(parts[1]))))
+    } catch (error) {
+      console.error('Nao foi possivel ler o token JWT.', error)
+      return null
+    }
+  }
+
+  function buildCurrentUserFromToken() {
+    const payload = parseTokenPayload(Auth.getToken())
+    if (!payload?.sub) {
+      return null
+    }
+
+    return {
+      email: payload.sub,
+      role: 'owner'
+    }
+  }
+
   async function getCurrentUser(force = false) {
     if (!Auth.isLoggedIn()) {
       currentUser = null
@@ -33,16 +68,14 @@ const App = (() => {
       return currentUserPromise
     }
 
-    currentUserPromise = api.get('/users/me')
-      .then((response) => {
-        currentUser = response.data || null
-        return currentUser
-      })
-      .catch((error) => {
-        if (error?.response?.status === 401 || error?.response?.status === 422) {
+    currentUserPromise = Promise.resolve()
+      .then(() => {
+        currentUser = buildCurrentUserFromToken()
+        if (!currentUser) {
           logout()
+          throw new Error('Sessao invalida.')
         }
-        throw error
+        return currentUser
       })
       .finally(() => {
         currentUserPromise = null

@@ -28,8 +28,7 @@ createApp({
         })
 
         Auth.saveToken(response.data.access_token)
-        const userResponse = await api.get('/users/me')
-        const user = userResponse.data || {}
+        const user = await App.getCurrentUser(true) || {}
         tokenReceived.value = true
         location.href = App.defaultHomeForRole(user.role)
       } catch (error) {

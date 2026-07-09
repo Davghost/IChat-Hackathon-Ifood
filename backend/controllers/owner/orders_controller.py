@@ -1,15 +1,17 @@
 from factory import api, db
 from flask import request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import current_user, jwt_required
 from spectree import Response
 from spectree.models import ValidationError as SpectreeValidationError
 
+from models import MenuItem, TrainRecord
 from utils.response_schema import GenericResponse
 from .access import owner_required
 from .blueprint import owner_controller
 from .orders import (
-    filter_orders,
+    build_owner_order_payload,
     find_owner_order,
+    filter_orders,
     load_owner_orders,
     normalize_train_record,
     pagination_links,
@@ -19,6 +21,7 @@ from .orders import (
     validate_status,
 )
 from .schemas import (
+    CreateOwnerOrderMessage,
     DEFAULT_ANALYTICS_DAYS,
     OrderStatusUpdateMessage,
     OwnerOrderResponse,
@@ -40,7 +43,7 @@ from .serializers import order_response
 @jwt_required()
 def list_orders():
     # Esta rota consolida consulta, filtro e paginacao dos pedidos do owner.
-    # Todas as operacoes partem do conjunto de pedidos pertencentes ao usuario autenticado.
+    # Todas as operacoes partem do conjunto importado em train_records.
     auth_error = owner_required()
     if auth_error:
         return auth_error
@@ -75,7 +78,7 @@ def list_orders():
     end_index = start_index + query.per_page
     paged_orders = orders[start_index:end_index]
 
-    # O payload final inclui links de navegacao, contadores por status e a lista serializada.
+    # O payload final inclui links de navegacao e a lista serializada dos pedidos reais do dataset.
     response = OrdersPageResponse(
         page=page,
         per_page=query.per_page,
@@ -92,19 +95,62 @@ def list_orders():
     return response.model_dump(mode="json"), 200
 
 
+@owner_controller.post("/orders")
+@api.validate(
+    json=CreateOwnerOrderMessage,
+    resp=Response(
+        HTTP_201=OwnerOrderResponse,
+        HTTP_400=SpectreeValidationError,
+        HTTP_403=GenericResponse,
+        HTTP_404=GenericResponse,
+    ),
+    tags=["owner"],
+)
+@jwt_required()
+def create_order():
+    # Esta rota registra um novo pedido escolhendo um prato ja cadastrado no cardapio do owner.
+    # O pedido e salvo em train_records para que painel, historico e faturamento usem a mesma fonte.
+    auth_error = owner_required()
+    if auth_error:
+        return auth_error
+
+    data = request.context.json
+    menu_item = MenuItem.query.filter_by(id=data.menu_item_id, owner_id=current_user.id).first()
+    if not menu_item:
+        return {"msg": "Menu item not found"}, 404
+
+    payload = build_owner_order_payload(
+        menu_item,
+        data.quantity,
+        customer_first_name=data.customer_first_name,
+        delivery_neighborhood=data.delivery_neighborhood,
+        owner_id=current_user.id,
+    )
+    record = TrainRecord(
+        source_table="owner_orders",
+        external_id=payload["order_id"],
+        payload_hash=TrainRecord.build_payload_hash(payload),
+        payload=payload,
+    )
+    db.session.add(record)
+    db.session.commit()
+
+    return order_response(normalize_train_record(record)).model_dump(mode="json"), 201
+
+
 @owner_controller.patch("/orders/<int:order_id>/status")
 @api.validate(
     json=OrderStatusUpdateMessage,
     resp=Response(
         HTTP_200=OwnerOrderResponse,
         HTTP_400=SpectreeValidationError,
+        HTTP_403=GenericResponse,
         HTTP_404=GenericResponse,
     ),
     tags=["owner"],
 )
 @jwt_required()
 def update_order_status(order_id):
-    # A alteracao de status e uma acao administrativa do owner sobre um pedido que lhe pertence.
     auth_error = owner_required()
     if auth_error:
         return auth_error
@@ -114,13 +160,10 @@ def update_order_status(order_id):
     if status_error:
         return status_error
 
-    # A busca considera o registro importado na base local de train_records.
-    order = find_owner_order(order_id)
-    if not order:
+    record = find_owner_order(order_id)
+    if not record:
         return {"msg": "Order not found"}, 404
 
-    # O status e armazenado dentro do payload do train_record, que agora e a fonte oficial dos pedidos.
-    set_train_order_status(order, data.status)
+    set_train_order_status(record, data.status)
     db.session.commit()
-    normalized_order = normalize_train_record(order)
-    return order_response(normalized_order).model_dump(mode="json"), 200
+    return order_response(normalize_train_record(record)).model_dump(mode="json"), 200

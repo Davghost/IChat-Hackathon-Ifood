@@ -39,7 +39,16 @@
           </div>
         </header>
 
+        <section id="ownerGuestState" class="guest-state" hidden>
+          <h2>Entre para continuar</h2>
+          <p>Faca login para acessar o painel do owner.</p>
+          <a class="button button-primary" href="login.html">Ir para login</a>
+        </section>
+
+        <section id="ownerAccessState" class="guest-state" hidden></section>
+
         <section id="ownerContent" class="view-stack" hidden>
+          <p id="ownerStatusMessage" class="alert alert-success">Carregando...</p>
           <div class="metric-grid">
             <article class="metric-card metric-red">
               <span>Pedidos hoje</span>
